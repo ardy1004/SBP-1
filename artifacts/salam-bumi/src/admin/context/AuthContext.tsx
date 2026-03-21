@@ -1,8 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import * as bcryptModule from "bcryptjs";
 import { logActivity } from "../utils/activityLog";
-
-const bcrypt = (bcryptModule as any).default ?? bcryptModule;
 
 interface AuthUser {
   email: string;
@@ -22,8 +19,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL as string) || "admin@salambumi.xyz";
-const ADMIN_PASSWORD_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH as string | undefined;
-const FALLBACK_PASSWORD = "salam2026";
+const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string) || "salam2026";
 
 const TOKEN_KEY = "sbp_admin_token";
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
@@ -84,33 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
     await new Promise(r => setTimeout(r, 700));
 
-    const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
-    if (!emailMatch) {
-      logActivity("Login Failed", `Email tidak sesuai: ${email}`);
-      return false;
-    }
+    const emailOk = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const passOk = password === ADMIN_PASSWORD;
 
-    let passwordMatch = false;
-
-    // Try bcrypt comparison if hash is available and valid
-    if (ADMIN_PASSWORD_HASH && ADMIN_PASSWORD_HASH.startsWith("$2")) {
-      try {
-        passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
-      } catch {
-        // bcrypt failed, fall through to fallback
-        passwordMatch = false;
-      }
-    }
-
-    // Fallback: direct comparison with fallback password
-    if (!passwordMatch) {
-      passwordMatch = password === FALLBACK_PASSWORD;
-    }
-
-    if (emailMatch && passwordMatch) {
+    if (emailOk && passOk) {
       const duration = rememberMe ? REMEMBER_ME_DURATION : SESSION_DURATION;
       const token = btoa(JSON.stringify({
-        email,
+        email: ADMIN_EMAIL,
         exp: Date.now() + duration,
         rememberMe,
       }));
@@ -121,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return true;
     }
 
-    logActivity("Login Failed", `Password salah untuk: ${email}`);
+    logActivity("Login Failed", `Percobaan login gagal: ${email}`);
     return false;
   };
 
