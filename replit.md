@@ -91,6 +91,20 @@ Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used b
 
 Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
 
+### `artifacts/salam-bumi` (`@workspace/salam-bumi`)
+
+React + Vite real estate website for Salam Bumi Property (Yogyakarta). Navy (#1E3A8A) + Gold (#F59E0B) branding.
+
+- Routing: `wouter` (not React Router DOM)
+- Admin auth: bcryptjs + localStorage JWT tokens
+- Admin credentials: stored in `.env` as `VITE_ADMIN_EMAIL` + `VITE_ADMIN_PASSWORD_HASH`
+- Default login: `admin@salambumi.xyz` / `salam2026`
+- Session: 24h default, 7 days if "Remember me" checked, 30min inactivity auto-logout
+- Rate limiting: 5 attempts / 15 minutes (stored in localStorage)
+- Activity logging: stored in localStorage as `sbp_activity_log`
+- Admin pages: Dashboard, Properties, Submissions, Contracts, Leads, Analytics, Settings
+- Data: all mock/static (no backend), `src/admin/data/mockData.ts` + `src/data/properties.ts`
+
 ### `scripts` (`@workspace/scripts`)
 
 Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.

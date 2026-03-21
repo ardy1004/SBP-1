@@ -1,0 +1,1140 @@
+{
+  "replit_ai_generation_prompt": {
+    "project_context": {
+      "name": "SALAM BUMI PROPERTY - Admin Dashboard",
+      "type": "Real Estate Property Management System",
+      "owner_type": "Solo Owner (Single Admin)",
+      "page_type": "Admin Dashboard & Management Panel",
+      "goal": "Generate a secure, professional, mobile-responsive Admin Dashboard using React Vite and Tailwind CSS. Must include property management, lead tracking, contract generation, and digital signature features. Ready for Cloudflare Pages deployment."
+    },
+    "tech_stack": {
+      "framework": "React Vite",
+      "styling": "Tailwind CSS (Mobile First)",
+      "icons": "Lucide React",
+      "routing": "React Router DOM (Protected Routes)",
+      "forms": "React Hook Form + Zod Validation",
+      "charts": "Recharts (Free)",
+      "signature": "react-signature-canvas",
+      "pdf_generation": "react-to-print or pdf-lib",
+      "state_management": "React Context API",
+      "language": "JavaScript (ES6+)"
+    },
+    "design_system": {
+      "primary_color": "#1E3A8A (Dark Blue)",
+      "secondary_color": "#F59E0B (Amber/Gold)",
+      "accent_color": "#EF4444 (Red)",
+      "success_color": "#10B981 (Green)",
+      "warning_color": "#F59E0B (Yellow)",
+      "background": "#F3F4F6 (Light Gray)",
+      "sidebar_bg": "#1F2937 (Dark Gray)",
+      "text_primary": "#111827",
+      "text_secondary": "#6B7280",
+      "text_light": "#F9FAFB",
+      "font_family": "Inter, sans-serif",
+      "responsive_breakpoints": {
+        "mobile": "default",
+        "tablet": "md:",
+        "desktop": "lg:"
+      },
+      "ui_principles": [
+        "Clean and professional dashboard",
+        "High contrast for readability",
+        "Touch-friendly buttons (min 44px)",
+        "Clear visual hierarchy",
+        "Consistent with public website design"
+      ]
+    },
+    "security_requirements": {
+      "authentication": {
+        "login_page": "/admin/login",
+        "credentials": {
+          "note": "Use environment variables, NEVER hardcode",
+          "email_env": "VITE_ADMIN_EMAIL",
+          "password_env": "VITE_ADMIN_PASSWORD_HASH"
+        },
+        "password_hashing": "bcryptjs",
+        "session_management": "JWT token with 24h expiry",
+        "protected_routes": "All /admin/* routes require authentication",
+        "logout": "Clear token and redirect to login",
+        "session_timeout": "30 minutes inactive auto-logout"
+      },
+      "two_factor_auth": {
+        "status": "Recommended for production",
+        "method": "Google Authenticator (TOTP)",
+        "backup_codes": "Generate 10 backup codes"
+      },
+      "ip_whitelisting": {
+        "status": "Recommended for production",
+        "note": "Implement via Cloudflare Rules later"
+      },
+      "activity_logging": {
+        "track": ["Login attempts", "Property CRUD actions", "Contract signings", "Lead interactions"],
+        "storage": "Local array for now, D1 table for production"
+      }
+    },
+    "admin_layout": {
+      "sidebar": {
+        "position": "Left side (desktop), Slide-in (mobile)",
+        "width": "250px desktop, full mobile",
+        "collapsible": true,
+        "logo": "SALAM BUMI PROPERTY (White text)",
+        "admin_profile": {
+          "photo": "https://images.salambumi.xyz/monic%20sbp.webp",
+          "name": "Monica Vera S",
+          "role": "Admin / Owner"
+        },
+        "menu_items": [
+          {
+            "icon": "LayoutDashboard",
+            "label": "Dashboard",
+            "path": "/admin/dashboard",
+            "active": true
+          },
+          {
+            "icon": "Home",
+            "label": "Kelola Properti",
+            "path": "/admin/properties",
+            "subitems": [
+              {"label": "Semua Properti", "path": "/admin/properties/all"},
+              {"label": "Tambah Properti", "path": "/admin/properties/add"},
+              {"label": "Properti Sold", "path": "/admin/properties/sold"}
+            ]
+          },
+          {
+            "icon": "FileText",
+            "label": "Form Submission",
+            "path": "/admin/submissions",
+            "badge": "New submissions count"
+          },
+          {
+            "icon": "FileSignature",
+            "label": "Perjanjian & Kontrak",
+            "path": "/admin/contracts",
+            "badge": "Pending signatures"
+          },
+          {
+            "icon": "Users",
+            "label": "Lead Management",
+            "path": "/admin/leads",
+            "badge": "Unread leads count"
+          },
+          {
+            "icon": "BarChart3",
+            "label": "Analytics",
+            "path": "/admin/analytics"
+          },
+          {
+            "icon": "Settings",
+            "label": "Settings",
+            "path": "/admin/settings"
+          },
+          {
+            "icon": "LogOut",
+            "label": "Logout",
+            "path": "/admin/logout",
+            "danger": true
+          }
+        ]
+      },
+      "topbar": {
+        "components": [
+          "Hamburger menu (mobile)",
+          "Page title",
+          "Notification bell (with badge)",
+          "Admin profile dropdown",
+          "Quick add property button"
+        ]
+      },
+      "main_content": {
+        "background": "#F3F4F6",
+        "padding": "24px",
+        "max_width": "1400px",
+        "centered": true
+      }
+    },
+    "login_page": {
+      "route": "/admin/login",
+      "layout": "Centered card on full screen",
+      "background": "Gradient or property image with overlay",
+      "form_fields": [
+        {
+          "name": "email",
+          "label": "Email / Username",
+          "type": "email",
+          "placeholder": "admin@sbp.com",
+          "required": true,
+          "validation": "Email format"
+        },
+        {
+          "name": "password",
+          "label": "Password",
+          "type": "password",
+          "placeholder": "••••••••",
+          "required": true,
+          "validation": "Min 8 characters",
+          "show_hide_toggle": true
+        }
+      ],
+      "actions": [
+        {
+          "label": "Login",
+          "type": "primary_button",
+          "full_width": true
+        },
+        {
+          "label": "Lupa Password?",
+          "type": "text_link",
+          "note": "For production: implement reset flow"
+        }
+      ],
+      "security_features": [
+        "Rate limiting (max 5 attempts per 15 minutes)",
+        "Error messages (generic, not specific)",
+        "Remember me option (7 days)",
+        "Redirect to dashboard on success"
+      ],
+      "branding": {
+        "logo": "SALAM BUMI PROPERTY",
+        "tagline": "Admin Dashboard",
+        "copyright": "© 2026 Salam Bumi Property"
+      }
+    },
+    "dashboard_overview": {
+      "route": "/admin/dashboard",
+      "title": "Dashboard Overview",
+      "stats_cards": [
+        {
+          "icon": "Home",
+          "label": "Total Properti",
+          "value": "{count}",
+          "trend": "+{count} bulan ini",
+          "color": "blue"
+        },
+        {
+          "icon": "Tag",
+          "label": "Properti Aktif",
+          "value": "{count}",
+          "trend": "{count} tersedia",
+          "color": "green"
+        },
+        {
+          "icon": "CheckCircle",
+          "label": "Terjual/Bulan",
+          "value": "{count}",
+          "trend": "+{percent}%",
+          "color": "gold"
+        },
+        {
+          "icon": "Users",
+          "label": "Lead Baru",
+          "value": "{count}",
+          "trend": "{count} belum direspond",
+          "color": "red"
+        }
+      ],
+      "charts": [
+        {
+          "title": "Lead per Bulan (6 Bulan Terakhir)",
+          "type": "LineChart",
+          "data_source": "leads grouped by month",
+          "x_axis": "Month",
+          "y_axis": "Lead Count"
+        },
+        {
+          "title": "Properti per Tipe",
+          "type": "PieChart",
+          "data_source": "properties grouped by type",
+          "segments": ["Rumah", "Kost", "Tanah", "Villa", "Ruko", "Lainnya"]
+        },
+        {
+          "title": "Lead Source Performance",
+          "type": "BarChart",
+          "data_source": "leads grouped by utm_source",
+          "categories": ["Google Organic", "Facebook", "WhatsApp", "Instagram", "Direct"]
+        }
+      ],
+      "recent_activities": [
+        {
+          "title": "Aktivitas Terbaru",
+          "items": [
+            "Properti baru ditambahkan: {title}",
+            "Lead baru dari: {name}",
+            "Kontrak ditandatangani: {listing_code}",
+            "Properti diupdate: {title}"
+          ]
+        }
+      ],
+      "quick_actions": [
+        {"label": "Tambah Properti", "icon": "Plus", "path": "/admin/properties/add"},
+        {"label": "Lihat Lead", "icon": "Users", "path": "/admin/leads"},
+        {"label": "Kontrak Baru", "icon": "FileSignature", "path": "/admin/contracts/new"},
+        {"label": "Analytics", "icon": "BarChart3", "path": "/admin/analytics"}
+      ]
+    },
+    "property_management": {
+      "route": "/admin/properties",
+      "sub_pages": ["all", "add", "edit", "sold"],
+      "property_list_view": {
+        "table_columns": [
+          "Image (thumbnail)",
+          "Kode Listing",
+          "Judul",
+          "Tipe",
+          "Lokasi",
+          "Harga",
+          "Status (Badge)",
+          "Views",
+          "Leads",
+          "Actions"
+        ],
+        "filters": [
+          {"label": "Semua Status", "options": ["All", "Active", "Sold", "Premium", "Featured", "Hot"]},
+          {"label": "Tipe Properti", "options": ["All", "Rumah", "Kost", "Tanah", "Villa", "Ruko", "Lainnya"]},
+          {"label": "Tujuan", "options": ["All", "Dijual", "Disewa", "Dijual & Disewa"]}
+        ],
+        "search": {
+          "placeholder": "Cari judul, kode listing, atau lokasi...",
+          "real_time": true
+        },
+        "pagination": {
+          "items_per_page": 20,
+          "show_total": true
+        },
+        "actions_per_row": [
+          {"label": "Edit", "icon": "Edit", "path": "/admin/properties/edit/{id}"},
+          {"label": "View", "icon": "Eye", "path": "/properti/{slug}", "external": true},
+          {"label": "Duplicate", "icon": "Copy"},
+          {"label": "Delete", "icon": "Trash", "confirm": true, "danger": true}
+        ]
+      },
+      "property_form": {
+        "route": "/admin/properties/add",
+        "title": "Tambah Properti Baru",
+        "sections": [
+          {
+            "section_name": "Informasi Dasar",
+            "fields": [
+              {
+                "name": "listing_code",
+                "label": "Kode Listing",
+                "type": "text",
+                "auto_generate": true,
+                "format": "R3.27 (Random alphanumeric)",
+                "editable": true,
+                "required": true
+              },
+              {
+                "name": "title",
+                "label": "Judul Properti",
+                "type": "text",
+                "placeholder": "Rumah Mewah 2 Lantai Sleman Dekat UGM",
+                "required": true,
+                "max_length": 100,
+                "seo_preview": true
+              },
+              {
+                "name": "slug",
+                "label": "URL Slug",
+                "type": "text",
+                "auto_generate": "From title",
+                "format": "rumah-mewah-2-lantai-sleman-dekat-ugm-R3.27",
+                "editable": true,
+                "required": true
+              },
+              {
+                "name": "purpose",
+                "label": "Tujuan",
+                "type": "radio_group",
+                "options": ["Dijual", "Disewakan", "Dijual & Disewakan"],
+                "required": true
+              }
+            ]
+          },
+          {
+            "section_name": "Harga & Label",
+            "fields": [
+              {
+                "name": "price_offer",
+                "label": "Harga Penawaran",
+                "type": "number",
+                "placeholder": "2500000000",
+                "format": "Rp 2.500.000.000",
+                "required": "If Dijual selected",
+                "conditional": "purpose === 'Dijual' OR purpose === 'Dijual & Disewakan'"
+              },
+              {
+                "name": "price_type",
+                "label": "Tipe Harga",
+                "type": "checkbox_group",
+                "options": ["Nego", "Nett"],
+                "required": false
+              },
+              {
+                "name": "old_price",
+                "label": "Harga Lama (Optional)",
+                "type": "number",
+                "placeholder": "2700000000",
+                "note": "Jika diisi, auto label HOT + strikethrough display",
+                "required": false
+              },
+              {
+                "name": "price_rent",
+                "label": "Harga Sewa / Tahun",
+                "type": "number",
+                "placeholder": "50000000",
+                "required": "If Disewakan selected",
+                "conditional": "purpose === 'Disewakan' OR purpose === 'Dijual & Disewakan'"
+              },
+              {
+                "name": "labels",
+                "label": "Label Properti",
+                "type": "checkbox_group",
+                "options": [
+                  {"value": "is_premium", "label": "PREMIUM", "style": "Gold badge"},
+                  {"value": "is_featured", "label": "FEATURED", "style": "Blue badge"},
+                  {"value": "is_hot", "label": "HOT", "style": "Red badge", "auto": "If old_price exists"},
+                  {"value": "is_sold", "label": "SOLD", "style": "Red diagonal overlay"},
+                  {"value": "is_choice", "label": "Properti Pilihan", "note": "Tampil di banner carousel"}
+                ]
+              }
+            ]
+          },
+          {
+            "section_name": "Lokasi Properti",
+            "fields": [
+              {
+                "name": "province",
+                "label": "Provinsi",
+                "type": "dropdown_search",
+                "options": ["DI. Yogyakarta", "Jawa Tengah", "Jawa Timur", "DKI Jakarta"],
+                "default": "DI. Yogyakarta",
+                "required": true
+              },
+              {
+                "name": "city",
+                "label": "Kabupaten / Kota",
+                "type": "dropdown_search",
+                "options": ["Yogyakarta Kota", "Kab. Sleman", "Kab. Bantul", "Kab. Gunung Kidul", "Kab. Kulon Progo"],
+                "required": true,
+                "dependent_on": "province"
+              },
+              {
+                "name": "district",
+                "label": "Kecamatan",
+                "type": "dropdown_search",
+                "options": ["Depok", "Ngaglik", "Ngemplak", "Mlati", "Gamping", "Godean"],
+                "required": true,
+                "dependent_on": "city"
+              },
+              {
+                "name": "village",
+                "label": "Kelurahan / Desa",
+                "type": "dropdown_search",
+                "options": ["Catur Tunggal", "Condongcatur", "Sinduadi", "Sleman"],
+                "required": true,
+                "dependent_on": "district"
+              },
+              {
+                "name": "address",
+                "label": "Alamat Lengkap",
+                "type": "textarea",
+                "placeholder": "Jl. Pajajaran No. 123, Catur Tunggal, Depok, Sleman",
+                "required": true,
+                "rows": 3
+              },
+              {
+                "name": "google_maps_url",
+                "label": "Link Google Maps",
+                "type": "url",
+                "placeholder": "https://maps.google.com/?q=-7.7567,110.3655",
+                "required": false,
+                "validation": "URL format"
+              },
+              {
+                "name": "latitude",
+                "label": "Latitude",
+                "type": "number",
+                "placeholder": "-7.7567",
+                "required": false
+              },
+              {
+                "name": "longitude",
+                "label": "Longitude",
+                "type": "number",
+                "placeholder": "110.3655",
+                "required": false
+              }
+            ]
+          },
+          {
+            "section_name": "Jenis Properti & Spesifikasi",
+            "fields": [
+              {
+                "name": "property_type",
+                "label": "Jenis Properti",
+                "type": "radio_group",
+                "options": ["Rumah", "Tanah", "Kost", "Hotel", "Homestay", "Villa", "Apartment", "Gudang", "Komersial Lainnya"],
+                "required": true
+              }
+            ],
+            "conditional_specs": {
+              "Rumah": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false},
+                {"name": "floors", "label": "Jumlah Lantai", "type": "number", "required": true},
+                {"name": "bedrooms", "label": "Kamar Tidur", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true}
+              ],
+              "Kost": [
+                {"name": "kost_type", "label": "Jenis Kost", "type": "checkbox_group", "options": ["Putra", "Putri", "Campur"], "required": true},
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false},
+                {"name": "floors", "label": "Jumlah Lantai", "type": "number", "required": true},
+                {"name": "bedrooms", "label": "Jumlah Kamar", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true},
+                {"name": "guard_room", "label": "Ruang Penjaga", "type": "boolean", "required": false},
+                {"name": "electricity_per_room", "label": "Token Listrik per Kamar", "type": "boolean", "required": false},
+                {"name": "rent_per_month", "label": "Harga Sewa Kamar / Bulan", "type": "number", "required": false},
+                {"name": "monthly_expense", "label": "Biaya Pengeluaran / Bulan", "type": "number", "required": false},
+                {"name": "furnishing", "label": "Kelengkapan", "type": "radio_group", "options": ["Fully Furnished", "Semi Furnished", "UnFurnished"], "required": false}
+              ],
+              "Tanah": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false}
+              ],
+              "Hotel": [
+                {"name": "hotel_type", "label": "Jenis Hotel", "type": "dropdown", "options": ["Budget/Melati", "Bintang 1", "Bintang 2", "Bintang 3", "Bintang 4", "Bintang 5", "Boutique"], "required": true},
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false},
+                {"name": "floors", "label": "Jumlah Lantai", "type": "number", "required": true},
+                {"name": "bedrooms", "label": "Jumlah Kamar", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true},
+                {"name": "rent_per_month", "label": "Harga Sewa Kamar / Bulan", "type": "number", "required": false},
+                {"name": "monthly_income", "label": "Income Rata-Rata / Bulan", "type": "number", "required": false},
+                {"name": "monthly_expense", "label": "Biaya Pengeluaran / Bulan", "type": "number", "required": false},
+                {"name": "furnishing", "label": "Kelengkapan", "type": "radio_group", "options": ["Fully Furnished", "Semi Furnished", "UnFurnished"], "required": false}
+              ],
+              "Homestay": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false},
+                {"name": "floors", "label": "Jumlah Lantai", "type": "number", "required": true},
+                {"name": "bedrooms", "label": "Kamar Tidur", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true},
+                {"name": "rent_per_month", "label": "Harga Sewa / Bulan", "type": "number", "required": false},
+                {"name": "monthly_income", "label": "Income Rata-Rata / Bulan", "type": "number", "required": false},
+                {"name": "monthly_expense", "label": "Biaya Pengeluaran / Bulan", "type": "number", "required": false},
+                {"name": "furnishing", "label": "Kelengkapan", "type": "radio_group", "options": ["Fully Furnished", "Semi Furnished", "UnFurnished"], "required": false}
+              ],
+              "Villa": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false},
+                {"name": "floors", "label": "Jumlah Lantai", "type": "number", "required": true},
+                {"name": "bedrooms", "label": "Kamar Tidur", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true},
+                {"name": "rent_per_month", "label": "Harga Sewa / Bulan", "type": "number", "required": false},
+                {"name": "monthly_income", "label": "Income Rata-Rata / Bulan", "type": "number", "required": false},
+                {"name": "monthly_expense", "label": "Biaya Pengeluaran / Bulan", "type": "number", "required": false},
+                {"name": "furnishing", "label": "Kelengkapan", "type": "radio_group", "options": ["Fully Furnished", "Semi Furnished", "UnFurnished"], "required": false}
+              ],
+              "Apartment": [
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "floor_number", "label": "Lantai Unit", "type": "number", "required": false},
+                {"name": "unit_number", "label": "No Unit", "type": "text", "required": false},
+                {"name": "bedrooms", "label": "Kamar Tidur", "type": "number", "required": true},
+                {"name": "bathrooms", "label": "Kamar Mandi", "type": "number", "required": true},
+                {"name": "furnishing", "label": "Kelengkapan", "type": "radio_group", "options": ["Fully Furnished", "Semi Furnished", "UnFurnished"], "required": false}
+              ],
+              "Gudang": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false}
+              ],
+              "Komersial Lainnya": [
+                {"name": "land_area", "label": "Luas Tanah (m²)", "type": "number", "required": true},
+                {"name": "building_area", "label": "Luas Bangunan (m²)", "type": "number", "required": true},
+                {"name": "front_width", "label": "Lebar Depan (m)", "type": "number", "required": false}
+              ]
+            }
+          },
+          {
+            "section_name": "Legalitas",
+            "fields": [
+              {
+                "name": "legal_status",
+                "label": "Status Legalitas",
+                "type": "radio_group",
+                "options": [
+                  "SHM & IMB/PBG Lengkap",
+                  "SHGB & IMB/PBG Lengkap",
+                  "SHM Pekarangan Tanpa IMB/PBG",
+                  "SHM Sawah/Tegalan",
+                  "SHGB Tanpa IMB/PBG",
+                  "Girik/Letter C/PPJB/dll",
+                  "Izin Usaha"
+                ],
+                "required": true
+              },
+              {
+                "name": "shgb_expiry",
+                "label": "SHGB Berlaku Sampai",
+                "type": "date",
+                "conditional": "legal_status contains 'SHGB'",
+                "required": false
+              },
+              {
+                "name": "ownership_status",
+                "label": "Kepemilikan",
+                "type": "radio_group",
+                "options": ["On Hand", "On Bank"],
+                "required": true
+              },
+              {
+                "name": "bank_name",
+                "label": "Nama Bank",
+                "type": "text",
+                "conditional": "ownership_status === 'On Bank'",
+                "required": "If On Bank"
+              },
+              {
+                "name": "outstanding_amount",
+                "label": "Outstanding di Bank",
+                "type": "number",
+                "conditional": "ownership_status === 'On Bank'",
+                "required": "If On Bank"
+              }
+            ]
+          },
+          {
+            "section_name": "Lingkungan Sekitar",
+            "fields": [
+              {
+                "name": "environmental_status",
+                "label": "Jarak dari Makam/Sungai/Sutet",
+                "type": "radio_group",
+                "options": ["Ya Jauh", "Dekat Sungai", "Dekat Makam", "Dekat Sutet"],
+                "required": true
+              },
+              {
+                "name": "distance_to_river",
+                "label": "Jarak ke Sungai (meter)",
+                "type": "number",
+                "conditional": "environmental_status === 'Dekat Sungai'",
+                "required": "If near river"
+              },
+              {
+                "name": "distance_to_grave",
+                "label": "Jarak ke Makam (meter)",
+                "type": "number",
+                "conditional": "environmental_status === 'Dekat Makam'",
+                "required": "If near grave"
+              },
+              {
+                "name": "distance_to_powerline",
+                "label": "Jarak ke Sutet (meter)",
+                "type": "number",
+                "conditional": "environmental_status === 'Dekat Sutet'",
+                "required": "If near powerline"
+              },
+              {
+                "name": "road_width",
+                "label": "Lebar Jalan (meter)",
+                "type": "number",
+                "required": true
+              }
+            ]
+          },
+          {
+            "section_name": "Deskripsi & Fasilitas",
+            "fields": [
+              {
+                "name": "description",
+                "label": "Deskripsi Detail Properti",
+                "type": "textarea",
+                "placeholder": "Jelaskan secara lengkap dan detail perihal properti...",
+                "required": true,
+                "rows": 6,
+                "character_count": true,
+                "max_length": 2000
+              },
+              {
+                "name": "facilities",
+                "label": "Fasilitas",
+                "type": "textarea",
+                "placeholder": "AC, Water Heater, Kitchen Set, Garage, Security, Pool, Gym...",
+                "required": false,
+                "rows": 3
+              },
+              {
+                "name": "selling_reason",
+                "label": "Alasan Dijual",
+                "type": "textarea",
+                "placeholder": "Pemilik pindah kota, Butuh dana, dll...",
+                "required": false,
+                "rows": 2,
+                "admin_only": true
+              }
+            ]
+          },
+          {
+            "section_name": "Upload Foto",
+            "fields": [
+              {
+                "name": "images",
+                "label": "Foto Properti",
+                "type": "file_upload",
+                "multiple": true,
+                "max_files": 20,
+                "accepted_formats": ["image/jpeg", "image/png", "image/webp"],
+                "max_size_per_file": "5MB",
+                "features": [
+                  "Drag & drop support",
+                  "Image preview thumbnails",
+                  "Reorder by drag",
+                  "Set primary image",
+                  "Delete individual images",
+                  "Auto convert to WebP",
+                  "Progress indicator",
+                  "Compress before upload"
+                ],
+                "required": true,
+                "min_files": 3
+              }
+            ]
+          },
+          {
+            "section_name": "Data Pemilik (Admin Only)",
+            "note": "Tidak tampil di public website",
+            "fields": [
+              {
+                "name": "owner_name",
+                "label": "Nama Pemilik",
+                "type": "text",
+                "required": true
+              },
+              {
+                "name": "owner_whatsapp_1",
+                "label": "No. WhatsApp 1",
+                "type": "tel",
+                "placeholder": "+6281391278889",
+                "required": true,
+                "direct_wa_link": true
+              },
+              {
+                "name": "owner_whatsapp_2",
+                "label": "No. WhatsApp 2",
+                "type": "tel",
+                "placeholder": "+62...",
+                "required": false,
+                "direct_wa_link": true
+              },
+              {
+                "name": "google_maps_url",
+                "label": "Link Google Maps",
+                "type": "url",
+                "placeholder": "https://maps.google.com/...",
+                "required": false,
+                "open_maps_button": true
+              }
+            ]
+          },
+          {
+            "section_name": "SEO Preview",
+            "fields": [
+              {
+                "name": "seo_preview",
+                "label": "Google Search Preview",
+                "type": "preview_component",
+                "auto_generate": {
+                  "title": "{title} - {formatted_price} | {city} | Salam Bumi Property",
+                  "description": "{bedrooms} KT, {bathrooms} KM, {land_area}m². {property_type} {purpose} di {district}, {city}. Legal: {legal_status}. Hubungi: {whatsapp}",
+                  "url": "https://salambumi.xyz/properti/{slug}"
+                },
+                "character_limits": {
+                  "title": 60,
+                  "description": 160
+                },
+                "warnings": "Show warning if exceeds limits"
+              }
+            ]
+          }
+        ],
+        "form_actions": [
+          {"label": "Simpan Draft", "type": "secondary_button"},
+          {"label": "Publish", "type": "primary_button"},
+          {"label": "Preview", "type": "outline_button", "external": true}
+        ],
+        "validation": {
+          "real_time": true,
+          "show_errors_inline": true,
+          "confirm_before_submit": true,
+          "success_message": "Properti berhasil disimpan!",
+          "error_message": "Gagal menyimpan properti. Periksa kembali input."
+        }
+      }
+    },
+    "form_submissions": {
+      "route": "/admin/submissions",
+      "title": "Form Submission (By Owner)",
+      "description": "Property submissions from website visitors/owners",
+      "list_view": {
+        "table_columns": [
+          "Tanggal Submit",
+          "Nama Owner",
+          "No. WhatsApp",
+          "Jenis Properti",
+          "Lokasi",
+          "Status",
+          "Actions"
+        ],
+        "status_badges": [
+          {"value": "new", "label": "Baru", "color": "blue"},
+          {"value": "reviewing", "label": "Ditinjau", "color": "yellow"},
+          {"value": "approved", "label": "Disetujui", "color": "green"},
+          {"value": "rejected", "label": "Ditolak", "color": "red"},
+          {"value": "published", "label": "Dipublish", "color": "green"}
+        ],
+        "actions_per_row": [
+          {"label": "Lihat Detail", "icon": "Eye"},
+          {"label": "Approve & Publish", "icon": "Check", "confirm": true},
+          {"label": "Reject", "icon": "X", "confirm": true, "danger": true},
+          {"label": "Convert to Listing", "icon": "FilePlus"}
+        ]
+      },
+      "submission_detail": {
+        "sections": [
+          "Data Pribadi Owner (Nama, KTP, Alamat, WhatsApp)",
+          "Data Properti (Same fields as manual form)",
+          "Opsi Perjanjian yang Dipilih",
+          "Upload Dokumen (KTP, Sertifikat, dll)",
+          "Admin Notes (Internal)"
+        ],
+        "actions": [
+          "Approve & Auto-Publish",
+          "Request More Info (Send WhatsApp)",
+          "Reject with Reason",
+          "Convert to Contract"
+        ]
+      }
+    },
+    "contract_management": {
+      "route": "/admin/contracts",
+      "title": "Perjanjian & Kontrak",
+      "contract_types": [
+        {
+          "name": "OPEN_LISTING",
+          "label": "Open Listing",
+          "fee": "3%",
+          "duration": "Tidak Terbatas",
+          "marketing_cost": "Ditanggung Company"
+        },
+        {
+          "name": "EXCLUSIVE_BOOSTER",
+          "label": "Exclusive Booster",
+          "fee": "3%",
+          "duration": "3/6/12 Bulan",
+          "marketing_cost": "Ditanggung Owner",
+          "ads_options": ["Meta Ads", "TikTok Ads"]
+        },
+        {
+          "name": "EXCLUSIVE_COMPANY",
+          "label": "Exclusive Company",
+          "fee": "5%",
+          "duration": "3/6/12 Bulan",
+          "marketing_cost": "Ditanggung Company",
+          "ads_options": ["Meta Ads", "TikTok Ads"]
+        }
+      ],
+      "contract_generator": {
+        "auto_fill_fields": [
+          "Contract Number (SBP-{listing_code})",
+          "Date (Current date)",
+          "Party 1 Info (CV Salam Bumi Property - Fixed)",
+          "Party 2 Info (From owner submission form)",
+          "Property Details (From property form)",
+          "Contract Type & Terms (From selection)"
+        ],
+        "contract_template": {
+          "title": "PERJANJIAN JASA PEMASARAN SALAM BUMI PROPERTY",
+          "sections": [
+            "Identitas Para Pihak",
+            "Pasal 1: Objek Perjanjian",
+            "Pasal 2: Jenis Listing & Masa Kontrak",
+            "Pasal 3: Ketentuan Fee/Komisi",
+            "Pasal 4: Jenis Pemasaran (If Exclusive)",
+            "Pasal 5: Kewajiban Para Pihak",
+            "Pasal 6: Penyelesaian Sengketa",
+            "Pasal 7: Lain-Lain"
+          ]
+        },
+        "digital_signature": {
+          "owner_signature": {
+            "type": "canvas",
+            "label": "Tanda Tangan Owner",
+            "required": true,
+            "tools": ["Draw", "Clear", "Undo"]
+          },
+          "agent_signature": {
+            "type": "canvas",
+            "label": "Tanda Tangan Agent (Ardy Salam)",
+            "default_image": "Pre-loaded signature image",
+            "required": true
+          },
+          "agreement_checkbox": {
+            "label": "Saya setuju dengan syarat dan ketentuan yang berlaku",
+            "required": true
+          },
+          "timestamp": "Auto-generate signing date/time",
+          "ip_address": "Log signer IP address"
+        },
+        "export_options": [
+          {"format": "PDF", "label": "Download PDF"},
+          {"format": "Print", "label": "Print Contract"},
+          {"format": "Email", "label": "Send via Email"},
+          {"format": "WhatsApp", "label": "Send via WhatsApp"}
+        ]
+      },
+      "contract_list": {
+        "table_columns": [
+          "Nomor Kontrak",
+          "Nama Owner",
+          "Properti",
+          "Jenis Kontrak",
+          "Tanggal Tanda Tangan",
+          "Status",
+          "Expiry Date",
+          "Actions"
+        ],
+        "status_badges": [
+          {"value": "draft", "label": "Draft", "color": "gray"},
+          {"value": "pending_signature", "label": "Pending Signature", "color": "yellow"},
+          {"value": "active", "label": "Aktif", "color": "green"},
+          {"value": "expired", "label": "Expired", "color": "red"},
+          {"value": "terminated", "label": "Diberhentikan", "color": "red"}
+        ],
+        "actions_per_row": [
+          {"label": "View", "icon": "Eye"},
+          {"label": "Edit", "icon": "Edit"},
+          {"label": "Download PDF", "icon": "Download"},
+          {"label": "Renew", "icon": "Refresh"},
+          {"label": "Terminate", "icon": "X", "danger": true}
+        ]
+      }
+    },
+    "lead_management": {
+      "route": "/admin/leads",
+      "title": "Lead Management (CRM Mini)",
+      "description": "Track all inquiries from website contact forms",
+      "lead_sources": ["Website Form", "WhatsApp Direct", "Facebook", "Instagram", "Google Organic", "Referral"],
+      "lead_statuses": [
+        {"value": "new", "label": "Baru", "color": "blue"},
+        {"value": "contacted", "label": "Dihubungi", "color": "yellow"},
+        {"value": "viewing_scheduled", "label": "Jadwal Kunjungan", "color": "purple"},
+        {"value": "negotiating", "label": "Negosiasi", "color": "orange"},
+        {"value": "closed_won", "label": "Deal", "color": "green"},
+        {"value": "closed_lost", "label": "Gagal", "color": "red"}
+      ],
+      "lead_priorities": [
+        {"value": "hot", "label": "HOT", "color": "red", "icon": "Fire"},
+        {"value": "warm", "label": "WARM", "color": "yellow", "icon": "Sun"},
+        {"value": "cold", "label": "COLD", "color": "gray", "icon": "Snowflake"}
+      ],
+      "lead_list": {
+        "table_columns": [
+          "Priority",
+          "Nama",
+          "WhatsApp",
+          "Properti Interest",
+          "Budget",
+          "Source",
+          "Status",
+          "Last Contact",
+          "Next Follow-up",
+          "Actions"
+        ],
+        "filters": [
+          {"label": "Status", "options": ["All", "New", "Contacted", "Viewing", "Negotiating", "Closed"]},
+          {"label": "Priority", "options": ["All", "HOT", "WARM", "COLD"]},
+          {"label": "Source", "options": ["All", "Website", "WhatsApp", "Facebook", "Instagram", "Google"]},
+          {"label": "Date Range", "type": "date_range_picker"}
+        ],
+        "search": {
+          "placeholder": "Cari nama, WhatsApp, atau properti...",
+          "real_time": true
+        },
+        "actions_per_row": [
+          {"label": "View Detail", "icon": "Eye"},
+          {"label": "WhatsApp", "icon": "MessageCircle", "direct_link": true},
+          {"label": "Schedule Viewing", "icon": "Calendar"},
+          {"label": "Add Note", "icon": "FileText"},
+          {"label": "Change Status", "icon": "Refresh"}
+        ]
+      },
+      "lead_detail": {
+        "sections": [
+          {
+            "title": "Informasi Lead",
+            "fields": ["Nama", "Asal Daerah", "WhatsApp", "Email", "Source", "Created Date"]
+          },
+          {
+            "title": "Interest Property",
+            "fields": ["Property Title", "Property Link", "Budget", "Payment Plan", "Message"]
+          },
+          {
+            "title": "Role Type",
+            "options": ["Calon Pembeli", "Penjual/Pemilik", "Broker/Agent"]
+          },
+          {
+            "title": "Communication History",
+            "type": "timeline",
+            "entries": ["WhatsApp messages", "Phone calls", "Emails", "Viewings"]
+          },
+          {
+            "title": "Notes",
+            "type": "textarea",
+            "add_note_button": true
+          },
+          {
+            "title": "Next Follow-up",
+            "type": "datetime_picker",
+            "reminder": "Set WhatsApp/Email reminder"
+          }
+        ],
+        "quick_actions": [
+          {"label": "Send WhatsApp", "icon": "MessageCircle", "template": true},
+          {"label": "Schedule Viewing", "icon": "Calendar"},
+          {"label": "Change Status", "icon": "Refresh"},
+          {"label": "Change Priority", "icon": "Flag"}
+        ]
+      },
+      "whatsapp_templates": {
+        "new_lead_response": "Halo {name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti {property_title}. Admin kami akan segera merespons. Untuk urgent, silakan telepon 0813-9127-8889.",
+        "viewing_confirmation": "Halo {name}! Konfirmasi jadwal kunjungan properti {property_title} pada {date} pukul {time}. Alamat: {address}. Mohon konfirmasi kehadiran Anda.",
+        "follow_up": "Halo {name}! Apakah Anda masih tertarik dengan properti {property_title}? Ada yang bisa kami bantu?",
+        "deal_closed": "Selamat {name}! Transaksi properti {property_title} telah berhasil. Terima kasih telah percaya pada Salam Bumi Property!"
+      }
+    },
+    "analytics_page": {
+      "route": "/admin/analytics",
+      "title": "Analytics & Performance",
+      "sections": [
+        {
+          "title": "Traffic Overview",
+          "metrics": ["Total Visitors", "Page Views", "Bounce Rate", "Avg Session Duration"],
+          "chart": "LineChart (30 days)"
+        },
+        {
+          "title": "Property Performance",
+          "metrics": ["Most Viewed Properties", "Most Inquired Properties", "Conversion Rate"],
+          "chart": "BarChart"
+        },
+        {
+          "title": "Lead Conversion Funnel",
+          "stages": ["Views", "Inquiries", "Viewings", "Negotiations", "Deals"],
+          "chart": "FunnelChart"
+        },
+        {
+          "title": "Marketing Channel ROI",
+          "channels": ["Google Organic", "Facebook Ads", "Instagram", "WhatsApp", "Direct"],
+          "metrics": ["Leads", "Cost", "Conversion Rate", "ROI"],
+          "chart": "PieChart + Table"
+        },
+        {
+          "title": "Monthly Revenue",
+          "metrics": ["Commission Earned", "Properties Sold", "Avg Deal Value"],
+          "chart": "AreaChart (12 months)"
+        }
+      ],
+      "export_options": ["Export PDF Report", "Export CSV Data", "Email Report"]
+    },
+    "settings_page": {
+      "route": "/admin/settings",
+      "title": "Settings",
+      "sections": [
+        {
+          "title": "Profile Settings",
+          "fields": ["Admin Name", "Admin Photo", "WhatsApp Number", "Email", "Password Change"]
+        },
+        {
+          "title": "Company Info",
+          "fields": ["Company Name", "Address", "Phone", "Email", "Website", "Social Media Links"]
+        },
+        {
+          "title": "Notification Settings",
+          "options": ["Email Notifications", "WhatsApp Notifications", "Lead Alerts", "Daily Summary"]
+        },
+        {
+          "title": "Security Settings",
+          "options": ["2FA Setup", "Session Timeout", "IP Whitelist", "Activity Log"]
+        },
+        {
+          "title": "SEO Settings",
+          "fields": ["Default Meta Title", "Default Meta Description", "Google Analytics ID", "Search Console Verification"]
+        },
+        {
+          "title": "Backup & Export",
+          "actions": ["Export All Data", "Download Database Backup", "Import Data"]
+        }
+      ]
+    },
+    "mock_data_instructions": {
+      "note": "Create local JSON files for testing all dashboard features",
+      "required_mock_files": [
+        "admin_users.json",
+        "properties.json (20+ sample properties)",
+        "leads.json (15+ sample leads)",
+        "contracts.json (5+ sample contracts)",
+        "submissions.json (5+ sample submissions)",
+        "analytics.json (6 months data)"
+      ]
+    },
+    "implementation_steps": [
+      "1. Setup admin folder structure (/admin/login, /admin/dashboard, /admin/*)",
+      "2. Create authentication context (login, logout, token management)",
+      "3. Build protected route wrapper (redirect if not authenticated)",
+      "4. Create admin layout (sidebar, topbar, main content)",
+      "5. Implement login page with validation",
+      "6. Build dashboard overview with stats cards and charts",
+      "7. Create property list view with filters and search",
+      "8. Build property form with all conditional fields",
+      "9. Implement image upload with preview and reorder",
+      "10. Create SEO preview component",
+      "11. Build form submissions list and detail views",
+      "12. Implement contract generator with digital signature canvas",
+      "13. Create lead management CRM with status tracking",
+      "14. Build analytics page with charts (Recharts)",
+      "15. Create settings page with all sections",
+      "16. Add activity logging for all actions",
+      "17. Implement responsive design for mobile admin access",
+      "18. Test all forms with validation",
+      "19. Add loading states and error handling",
+      "20. Prepare for Cloudflare D1 integration"
+    ],
+    "constraints": {
+      "free_tier_optimization": "Use free libraries only, minimize bundle size",
+      "no_backend_yet": "Use mock data with localStorage for persistence during development",
+      "solo_owner_focus": "Single admin account, no role-based access needed",
+      "security": "Password hashing, JWT tokens, session management required",
+      "consistency": "Match public website design system (colors, fonts, components)",
+      "mobile_responsive": "Admin dashboard must work on tablet/mobile for on-the-go management"
+    },
+    "validation_requirements": {
+      "form_validation": "Use Zod schema for all forms",
+      "required_fields": "Validate all required fields before submit",
+      "error_messages": "Show clear, user-friendly error messages in Indonesian",
+      "success_feedback": "Show toast notifications for all actions",
+      "confirm_dialogs": "Confirm before delete, reject, or terminate actions"
+    },
+    "accessibility_requirements": {
+      "aria_labels": "All interactive elements must have aria-labels",
+      "keyboard_navigation": "All features accessible via keyboard",
+      "focus_states": "Clear focus indicators for all buttons and inputs",
+      "color_contrast": "Meet WCAG 2.1 AA standards",
+      "screen_reader": "Proper labels for form fields and tables"
+    }
+  }
+}
