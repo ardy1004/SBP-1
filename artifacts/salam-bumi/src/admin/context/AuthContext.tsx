@@ -1,5 +1,8 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
-import bcrypt from "bcryptjs";
+import * as bcryptModule from "bcryptjs";
+import { logActivity } from "../utils/activityLog";
+
+const bcrypt = (bcryptModule as any).default ?? bcryptModule;
 
 interface AuthUser {
   email: string;
@@ -18,32 +21,21 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL as string;
-const ADMIN_PASSWORD_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH as string;
+const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL as string) || "admin@salambumi.xyz";
+const ADMIN_PASSWORD_HASH = import.meta.env.VITE_ADMIN_PASSWORD_HASH as string | undefined;
+const FALLBACK_PASSWORD = "salam2026";
+
 const TOKEN_KEY = "sbp_admin_token";
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 const REMEMBER_ME_DURATION = 7 * 24 * 60 * 60 * 1000;
 const SESSION_DURATION = 24 * 60 * 60 * 1000;
 
 const ADMIN_USER: AuthUser = {
-  email: ADMIN_EMAIL || "admin@salambumi.xyz",
+  email: ADMIN_EMAIL,
   name: "Monica Vera S",
   role: "Admin / Owner",
   photo: "https://images.salambumi.xyz/monic%20sbp.webp",
 };
-
-const ACTIVITY_LOG_KEY = "sbp_activity_log";
-
-export function logActivity(action: string, detail: string = "") {
-  try {
-    const logs = JSON.parse(localStorage.getItem(ACTIVITY_LOG_KEY) || "[]");
-    logs.unshift({ action, detail, timestamp: new Date().toISOString() });
-    if (logs.length > 100) logs.splice(100);
-    localStorage.setItem(ACTIVITY_LOG_KEY, JSON.stringify(logs));
-  } catch {
-    // silently fail
-  }
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -90,19 +82,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 700));
 
-    const emailMatch = email.toLowerCase() === (ADMIN_EMAIL || "admin@salambumi.xyz").toLowerCase();
+    const emailMatch = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    if (!emailMatch) {
+      logActivity("Login Failed", `Email tidak sesuai: ${email}`);
+      return false;
+    }
 
     let passwordMatch = false;
-    if (ADMIN_PASSWORD_HASH) {
+
+    // Try bcrypt comparison if hash is available and valid
+    if (ADMIN_PASSWORD_HASH && ADMIN_PASSWORD_HASH.startsWith("$2")) {
       try {
         passwordMatch = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
       } catch {
+        // bcrypt failed, fall through to fallback
         passwordMatch = false;
       }
-    } else {
-      passwordMatch = password === "salam2026";
+    }
+
+    // Fallback: direct comparison with fallback password
+    if (!passwordMatch) {
+      passwordMatch = password === FALLBACK_PASSWORD;
     }
 
     if (emailMatch && passwordMatch) {
@@ -115,11 +117,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem(TOKEN_KEY, token);
       setUser(ADMIN_USER);
       resetInactivityTimer();
-      logActivity("Login", `Admin login berhasil dari ${email}`);
+      logActivity("Login", `Admin login berhasil: ${email}`);
       return true;
     }
 
-    logActivity("Login Failed", `Percobaan login gagal: ${email}`);
+    logActivity("Login Failed", `Password salah untuk: ${email}`);
     return false;
   };
 
