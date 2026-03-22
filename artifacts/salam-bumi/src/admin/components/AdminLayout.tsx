@@ -173,6 +173,10 @@ export function AdminLayout({ children, title }: { children: React.ReactNode; ti
 
   useEffect(() => { setSidebarOpen(false); }, []);
 
+  // Badge counts - set to 0 (can be fetched from API if needed)
+  const newSubmissions = 0;
+  const newLeads = 0;
+  const pendingContracts = 0;
   const totalBadge = (newSubmissions || 0) + (newLeads || 0) + (pendingContracts || 0);
 
   return (
