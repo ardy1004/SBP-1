@@ -139,7 +139,8 @@ export default function AdminPropertyForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const isEdit = !!id;
-  const existing = isEdit ? mockProperties.find(p => p.id === id) : null;
+  // TODO: Fetch existing property from API when in edit mode
+  const existing: any = null;
 
   const [listingCode] = useState(existing?.listing_code || generateListingCode());
   const [title, setTitle] = useState(existing?.title || "");

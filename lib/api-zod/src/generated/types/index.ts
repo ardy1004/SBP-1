@@ -13,7 +13,6 @@ export * from "./getProperties200Pagination";
 export * from "./getPropertiesIsSold";
 export * from "./getPropertiesParams";
 export * from "./getPropertyBySlug200";
-export * from "./healthStatus";
 export * from "./property";
 export * from "./propertyCreateInput";
 export * from "./propertyCreateInputPropertyType";
@@ -23,4 +22,4 @@ export * from "./propertyUpdateInputPropertyType";
 export * from "./propertyUpdateInputPurpose";
 export * from "./updateProperty200";
 export * from "./uploadPropertyImage200";
-export * from "./uploadPropertyImageBody";
+// uploadPropertyImageBody is exported from api.ts to avoid conflict
