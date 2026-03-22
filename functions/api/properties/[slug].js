@@ -111,7 +111,8 @@ export async function onRequestPut(context) {
       return errorResponse("Unauthorized", 401, request);
     }
 
-    const { id } = params;
+    // Parameter name is 'slug' but we use it as 'id' for update
+    const id = params.slug || params.id;
     const body = await request.json();
 
     // Cek properti exists
@@ -190,7 +191,8 @@ export async function onRequestDelete(context) {
       return errorResponse("Unauthorized", 401, request);
     }
 
-    const { id } = params;
+    // Parameter name is 'slug' but we use it as 'id' for delete
+    const id = params.slug || params.id;
 
     // Cek properti exists
     const existing = await env.DB.prepare("SELECT id, title FROM properties WHERE id = ?").bind(id).first();

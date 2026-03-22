@@ -1,10 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AdminLayout } from "../components/AdminLayout";
-import { mockLeads, Lead } from "../data/mockData";
-import { Search, Eye, MessageCircle, Calendar, FileText, ChevronDown, Flame, Sun, Snowflake, X, Clock, Filter } from "lucide-react";
+import { Search, Eye, MessageCircle, Calendar, FileText, ChevronDown, Flame, Sun, Snowflake, X, Clock, Filter, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+
+interface Lead {
+  id: string;
+  name: string;
+  whatsapp: string;
+  email?: string;
+  property_interest?: string;
+  property_slug?: string;
+  property_id?: string;
+  message?: string;
+  role: string;
+  status: "new" | "contacted" | "viewing_scheduled" | "negotiating" | "closed_won" | "closed_lost";
+  priority: "hot" | "warm" | "cold";
+  budget?: string;
+  payment_plan?: string;
+  notes?: string;
+  last_contact?: string;
+  next_followup?: string;
+  created_at: string;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   new: "bg-blue-100 text-blue-700",
@@ -27,20 +46,53 @@ const PRIORITY_COLOR: Record<string, string> = {
   hot: "text-red-500", warm: "text-amber-500", cold: "text-blue-400",
 };
 
-function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void }) {
+function LeadDetailModal({ lead, onClose, onUpdate }: { lead: Lead; onClose: () => void; onUpdate: () => void }) {
   const { toast } = useToast();
-  const [note, setNote] = useState(lead.notes);
+  const [note, setNote] = useState(lead.notes || "");
   const [status, setStatus] = useState(lead.status);
   const [followupDate, setFollowupDate] = useState(lead.next_followup?.slice(0, 16) || "");
+  const [saving, setSaving] = useState(false);
 
   const handleWA = (template?: string) => {
-    let msg = template || `Halo ${lead.name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti ${lead.property_interest}. Admin kami akan segera merespons.`;
-    msg = msg.replace("{name}", lead.name).replace("{property_title}", lead.property_interest);
+    let msg = template || `Halo ${lead.name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti ${lead.property_interest || "Anda"}. Admin kami akan segera merespons.`;
+    msg = msg.replace("{name}", lead.name).replace("{property_title}", lead.property_interest || "");
     window.open(`https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const token = localStorage.getItem("sbp_admin_token");
+      const response = await fetch(`/api/leads/${lead.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          status,
+          notes: note,
+          next_followup: followupDate || null,
+        }),
+      });
+
+      if (response.ok) {
+        toast({ title: "Lead diupdate", description: "Perubahan berhasil disimpan." });
+        onUpdate();
+        onClose();
+      } else {
+        throw new Error("Update failed");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      toast({ title: "Error", description: "Gagal menyimpan perubahan", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const waTemplates = [
-    { label: "Respon Awal", msg: `Halo {name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti {property_title}. Admin kami akan segera merespons. Untuk urgent, silakan telepon 0813-9127-8889.` },
+    { label: "Respon Awal", msg: `Halo {name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti {property_title}. Admin kami akan segera merespons.` },
     { label: "Konfirmasi Viewing", msg: `Halo {name}! Konfirmasi jadwal kunjungan properti {property_title}. Mohon konfirmasi ketersediaan waktu Anda.` },
     { label: "Follow-up", msg: `Halo {name}! Apakah Anda masih tertarik dengan properti {property_title}? Ada yang bisa kami bantu?` },
     { label: "Deal Closed", msg: `Selamat {name}! Transaksi properti {property_title} telah berhasil. Terima kasih telah percaya pada Salam Bumi Property!` },
@@ -48,88 +100,99 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-5 border-b border-gray-100">
-          <h2 className="font-bold text-gray-900 text-lg">Detail Lead</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between rounded-t-2xl">
+          <h2 className="text-lg font-bold text-gray-900">Detail Lead</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
         </div>
-        <div className="p-5 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">{lead.name.charAt(0)}</div>
-            <div>
-              <div className="font-bold text-gray-900">{lead.name}</div>
-              <div className="text-sm text-gray-500">{lead.origin} · {lead.role}</div>
+        <div className="p-6 space-y-6">
+          {/* Contact Info */}
+          <div className="bg-gray-50 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">Informasi Kontak</h3>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><span className="text-gray-500">Nama:</span> <span className="font-medium">{lead.name}</span></div>
+              <div><span className="text-gray-500">WhatsApp:</span> <span className="font-medium">{lead.whatsapp}</span></div>
+              <div><span className="text-gray-500">Role:</span> <span className="font-medium">{lead.role}</span></div>
+              <div><span className="text-gray-500">Budget:</span> <span className="font-medium">{lead.budget || "—"}</span></div>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <div><div className="text-gray-500 font-medium">WhatsApp</div><div className="font-semibold text-gray-900">{lead.whatsapp}</div></div>
-            <div><div className="text-gray-500 font-medium">Sumber</div><div className="font-semibold text-gray-900">{lead.source}</div></div>
-            <div><div className="text-gray-500 font-medium">Budget</div><div className="font-semibold text-gray-900">{lead.budget}</div></div>
-            <div><div className="text-gray-500 font-medium">Pembayaran</div><div className="font-semibold text-gray-900">{lead.payment_plan}</div></div>
-            <div className="col-span-2"><div className="text-gray-500 font-medium">Properti Diminati</div><div className="font-semibold text-gray-900">{lead.property_interest}</div></div>
-            <div className="col-span-2"><div className="text-gray-500 font-medium">Pesan</div><div className="text-gray-700 bg-gray-50 p-3 rounded-lg mt-1">{lead.message}</div></div>
+
+          {/* Property Interest */}
+          <div className="bg-blue-50 rounded-xl p-4">
+            <h3 className="font-semibold text-gray-900 mb-3">Properti yang Diminati</h3>
+            <p className="text-sm font-medium">{lead.property_interest || "Tidak ada data"}</p>
           </div>
-          <div>
-            <label className="text-sm font-semibold text-gray-700">Status Lead</label>
-            <select value={status} onChange={e => setStatus(e.target.value as Lead["status"])} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-              {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-semibold text-gray-700">Catatan Internal</label>
-            <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Tambahkan catatan..." />
+
+          {/* Status & Priority */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Status</label>
+              <select 
+                value={status} 
+                onChange={(e) => setStatus(e.target.value as any)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+              >
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>{v}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Priority</label>
+              <div className={`flex items-center gap-2 ${PRIORITY_COLOR[lead.priority]}`}>
+                {PRIORITY_ICON[lead.priority] ? (() => {
+                  const PriorityIcon = PRIORITY_ICON[lead.priority];
+                  return <PriorityIcon className="w-5 h-5" />;
+                })() : null}
+                <span className="font-medium capitalize">{lead.priority}</span>
+              </div>
+            </div>
           </div>
 
           {/* Follow-up Date */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Next Follow-up</label>
-            <input type="datetime-local" value={followupDate} onChange={e => setFollowupDate(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Next Follow-up</label>
+            <input 
+              type="datetime-local"
+              value={followupDate}
+              onChange={(e) => setFollowupDate(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+            />
           </div>
 
-          {/* Communication History */}
+          {/* Notes */}
           <div>
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Riwayat Komunikasi</label>
-            <div className="mt-2 space-y-2 border-l-2 border-gray-200 pl-4">
-              <div className="relative">
-                <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-blue-400 border-2 border-white" />
-                <div className="text-xs text-gray-500">{new Date(lead.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                <div className="text-sm text-gray-700 font-medium">Lead masuk via {lead.source}</div>
-              </div>
-              {lead.last_contact && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-green-400 border-2 border-white" />
-                  <div className="text-xs text-gray-500">{new Date(lead.last_contact).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                  <div className="text-sm text-gray-700 font-medium">Terakhir dihubungi</div>
-                </div>
-              )}
-              {lead.next_followup && (
-                <div className="relative">
-                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-amber-400 border-2 border-white" />
-                  <div className="text-xs text-gray-500">{new Date(lead.next_followup).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
-                  <div className="text-sm text-gray-700 font-medium">Follow-up terjadwal</div>
-                </div>
-              )}
-            </div>
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Catatan</label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              rows={3}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none"
+              placeholder="Tambahkan catatan..."
+            />
           </div>
 
-          {/* WA Templates */}
+          {/* WhatsApp Templates */}
           <div>
-            <label className="text-sm font-semibold text-gray-700">Template WhatsApp</label>
-            <div className="mt-2 grid grid-cols-2 gap-2">
-              {waTemplates.map(t => (
-                <button key={t.label} onClick={() => handleWA(t.msg)} className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors text-left">
+            <label className="text-sm font-medium text-gray-700 mb-2 block">Quick WhatsApp</label>
+            <div className="flex flex-wrap gap-2">
+              {waTemplates.map((t, i) => (
+                <Button key={i} variant="outline" size="sm" onClick={() => handleWA(t.msg)}>
                   {t.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button onClick={() => handleWA()} className="flex-1 gap-2 bg-[#25D366] hover:bg-[#20bf5a]">
-              <MessageCircle className="w-4 h-4" /> Kirim WhatsApp
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t border-gray-100">
+            <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary hover:bg-primary/90">
+              {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</> : "Simpan Perubahan"}
             </Button>
-            <Button onClick={() => { toast({ title: "Tersimpan", description: "Perubahan lead berhasil disimpan." }); onClose(); }} className="flex-1 bg-primary hover:bg-primary/90">
-              Simpan
+            <Button variant="outline" onClick={() => handleWA()} className="flex-1">
+              <MessageCircle className="w-4 h-4 mr-2" /> WhatsApp
             </Button>
           </div>
         </div>
@@ -139,127 +202,209 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
 }
 
 export default function AdminLeads() {
+  const { toast } = useToast();
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
-  const [sourceFilter, setSourceFilter] = useState("All");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
-  const leadSources = ["All", "Website Form", "WhatsApp Direct", "Facebook", "Instagram", "Google Organic", "Referral"];
+  // Fetch leads from API
+  const fetchLeads = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("sbp_admin_token");
+      const response = await fetch("/api/leads/list", {
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      });
 
-  const filtered = mockLeads.filter(l => {
-    const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase()) ||
-      l.whatsapp.includes(search) || l.property_interest.toLowerCase().includes(search.toLowerCase());
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.data) {
+          setLeads(data.data);
+        }
+      } else {
+        // API might not exist yet, show empty state
+        setLeads([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch leads:", error);
+      setLeads([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads();
+  }, []);
+
+  // Filter leads
+  const filtered = leads.filter(l => {
+    const matchSearch = !search || 
+      l.name.toLowerCase().includes(search.toLowerCase()) ||
+      l.whatsapp.includes(search) ||
+      (l.property_interest && l.property_interest.toLowerCase().includes(search.toLowerCase()));
     const matchStatus = statusFilter === "All" || l.status === statusFilter;
-    const matchPriority = priorityFilter === "All" || l.priority === priorityFilter.toLowerCase();
-    const matchSource = sourceFilter === "All" || l.source === sourceFilter;
-    return matchSearch && matchStatus && matchPriority && matchSource;
+    const matchPriority = priorityFilter === "All" || l.priority === priorityFilter;
+    return matchSearch && matchStatus && matchPriority;
   });
+
+  const newLeadsCount = leads.filter(l => l.status === "new").length;
+  const hotLeadsCount = leads.filter(l => l.priority === "hot").length;
 
   return (
     <AdminLayout title="Lead Management">
-      {/* Stats */}
-      <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 mb-4">
-        {Object.entries(STATUS_LABELS).map(([key, label]) => {
-          const count = mockLeads.filter(l => l.status === key).length;
-          return (
-            <div key={key} className="bg-white rounded-xl p-3 text-center shadow-sm border border-gray-100">
-              <div className="text-xl font-extrabold text-gray-900">{count}</div>
-              <div className="text-xs text-gray-500 font-medium mt-0.5">{label}</div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Filters */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4 flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input placeholder="Cari nama, WhatsApp, atau properti..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+      {/* Stats Cards */}
+      <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+          <div className="text-2xl font-bold text-gray-900">{leads.length}</div>
+          <div className="text-sm text-gray-500">Total Lead</div>
         </div>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-          <option value="All">Semua Status</option>
-          {Object.entries(STATUS_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-        </select>
-        <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-          {["All", "HOT", "WARM", "COLD"].map(p => <option key={p}>{p}</option>)}
-        </select>
-        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
-          {leadSources.map(s => <option key={s} value={s}>{s}</option>)}
-        </select>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-blue-100">
+          <div className="text-2xl font-bold text-blue-600">{newLeadsCount}</div>
+          <div className="text-sm text-gray-500">Lead Baru</div>
+        </div>
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-red-100">
+          <div className="text-2xl font-bold text-red-600">{hotLeadsCount}</div>
+          <div className="text-sm text-gray-500">Hot Lead</div>
+        </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 border-b border-gray-100">
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Priority</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden md:table-cell">WhatsApp</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Properti</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Last Contact</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Follow-up</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Sumber</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
-                <th className="text-center text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
-              {filtered.map(l => {
-                const PriorityIcon = PRIORITY_ICON[l.priority];
-                return (
-                  <tr key={l.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <PriorityIcon className={`w-5 h-5 ${PRIORITY_COLOR[l.priority]}`} />
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="font-semibold text-gray-900 text-sm">{l.name}</div>
-                      <div className="text-xs text-gray-400">{l.origin} · {l.role}</div>
-                    </td>
-                    <td className="px-4 py-3 hidden md:table-cell">
-                      <a href={`https://wa.me/${l.whatsapp}`} target="_blank" rel="noreferrer" className="text-sm text-green-600 hover:underline">{l.whatsapp}</a>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="text-sm text-gray-700 truncate max-w-[180px]">{l.property_interest}</div>
-                    </td>
-                    <td className="px-4 py-3 hidden xl:table-cell">
-                      <div className="text-sm text-gray-500">{l.last_contact ? new Date(l.last_contact).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "—"}</div>
-                    </td>
-                    <td className="px-4 py-3 hidden xl:table-cell">
-                      <div className="text-sm text-gray-500">{l.next_followup ? new Date(l.next_followup).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "—"}</div>
-                    </td>
-                    <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="text-sm text-gray-500">{l.source}</div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${STATUS_COLORS[l.status]}`}>{STATUS_LABELS[l.status]}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => setSelectedLead(l)} className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Detail">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <a href={`https://wa.me/${l.whatsapp}`} target="_blank" rel="noreferrer">
-                          <button className="p-1.5 text-gray-400 hover:text-[#25D366] hover:bg-green-50 rounded-lg transition-colors" title="WhatsApp">
+      {/* Toolbar */}
+      <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input 
+              placeholder="Cari nama, WhatsApp, atau properti..." 
+              value={search} 
+              onChange={e => setSearch(e.target.value)} 
+              className="pl-10" 
+            />
+          </div>
+          <div className="flex gap-2">
+            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="All">Semua Status</option>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+            <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="All">Semua Prioritas</option>
+              <option value="hot">Hot</option>
+              <option value="warm">Warm</option>
+              <option value="cold">Cold</option>
+            </select>
+          </div>
+        </div>
+        <div className="text-sm text-gray-500 mt-2">
+          {loading ? "Memuat..." : `Menampilkan ${filtered.length} dari ${leads.length} lead`}
+        </div>
+      </div>
+
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-gray-500">Memuat data lead...</span>
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && leads.length === 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+          <MessageCircle className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">Belum Ada Lead</h3>
+          <p className="text-gray-500 mb-4">Lead akan muncul ketika ada pengunjung yang mengisi form kontak di halaman properti.</p>
+        </div>
+      )}
+
+      {/* Lead List */}
+      {!loading && filtered.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-gray-50 border-b border-gray-100">
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3">Nama</th>
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3">WhatsApp</th>
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3 hidden md:table-cell">Properti</th>
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3">Status</th>
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3">Priority</th>
+                  <th className="text-left text-xs font-bold text-gray-500 uppercase px-4 py-3 hidden lg:table-cell">Tanggal</th>
+                  <th className="text-center text-xs font-bold text-gray-500 uppercase px-4 py-3">Aksi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filtered.map(lead => {
+                  const PriorityIcon = PRIORITY_ICON[lead.priority];
+                  return (
+                    <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="font-medium text-gray-900">{lead.name}</div>
+                        <div className="text-xs text-gray-500">{lead.role}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="text-sm text-gray-700">{lead.whatsapp}</div>
+                      </td>
+                      <td className="px-4 py-3 hidden md:table-cell">
+                        <div className="text-sm text-gray-600 truncate max-w-[200px]">{lead.property_interest || "—"}</div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[lead.status]}`}>
+                          {STATUS_LABELS[lead.status]}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className={`flex items-center gap-1 ${PRIORITY_COLOR[lead.priority]}`}>
+                          {PriorityIcon && <PriorityIcon className="w-4 h-4" />}
+                          <span className="text-xs font-medium capitalize">{lead.priority}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <div className="text-xs text-gray-500">
+                          {lead.created_at ? new Date(lead.created_at).toLocaleDateString("id-ID") : "—"}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center justify-center gap-1">
+                          <button 
+                            onClick={() => setSelectedLead(lead)}
+                            className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                            title="Detail"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={() => window.open(`https://wa.me/${lead.whatsapp}`, '_blank')}
+                            className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors"
+                            title="WhatsApp"
+                          >
                             <MessageCircle className="w-4 h-4" />
                           </button>
-                        </a>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr><td colSpan={7} className="text-center py-12 text-gray-400">Tidak ada lead ditemukan.</td></tr>
-              )}
-            </tbody>
-          </table>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {selectedLead && <LeadDetailModal lead={selectedLead} onClose={() => setSelectedLead(null)} />}
+      {/* Lead Detail Modal */}
+      {selectedLead && (
+        <LeadDetailModal 
+          lead={selectedLead} 
+          onClose={() => setSelectedLead(null)} 
+          onUpdate={fetchLeads}
+        />
+      )}
     </AdminLayout>
   );
 }

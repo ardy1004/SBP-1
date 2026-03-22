@@ -1,10 +1,7 @@
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "../components/AdminLayout";
-import {
-  mockLeads, mockContracts, mockSubmissions,
-  mockAnalytics, mockPropertyTypes, mockLeadSources
-} from "../data/mockData";
-import { mockProperties } from "@/data/properties";
+import { propertiesApi } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -14,11 +11,20 @@ import {
 import {
   Home, Tag, CheckCircle, Users, Plus, FileSignature,
   BarChart3, TrendingUp, ArrowUpRight, Eye, Clock,
-  FileText, Activity, DollarSign
+  FileText, Activity, DollarSign, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const PIE_COLORS = ["#1E3A8A", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444", "#06B6D4"];
+
+interface DashboardStats {
+  totalProperties: number;
+  activeProperties: number;
+  soldProperties: number;
+  totalLeads: number;
+  newLeads: number;
+  hotLeads: number;
+}
 
 function StatCard({
   icon: Icon,
@@ -79,288 +85,217 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function AdminDashboard() {
-  const totalProps = mockProperties.length;
-  const activeProps = mockProperties.filter(p => !p.badges.is_sold).length;
-  const soldProps = mockProperties.filter(p => p.badges.is_sold).length;
-  const newLeads = mockLeads.filter(l => l.status === "new").length;
-  const hotLeads = mockLeads.filter(l => l.priority === "hot").length;
-  const newSubmissions = mockSubmissions.filter(s => s.status === "new").length;
-  const pendingContracts = mockContracts.filter(c => c.status === "pending_signature").length;
-  const activeContracts = mockContracts.filter(c => c.status === "active").length;
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalProperties: 0,
+    activeProperties: 0,
+    soldProperties: 0,
+    totalLeads: 0,
+    newLeads: 0,
+    hotLeads: 0,
+  });
+  const [recentProperties, setRecentProperties] = useState<any[]>([]);
 
-  const latestMonth = mockAnalytics[mockAnalytics.length - 1];
-  const prevMonth = mockAnalytics[mockAnalytics.length - 2];
-  const revenueGrowth = prevMonth
-    ? Math.round(((latestMonth.revenue - prevMonth.revenue) / prevMonth.revenue) * 100)
-    : 0;
+  // Fetch dashboard data from API
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      try {
+        // Fetch properties
+        const propsResult = await propertiesApi.getAll({ limit: 100 });
+        
+        if (propsResult.success) {
+          const properties = propsResult.data || [];
+          const totalProperties = propsResult.pagination?.total || properties.length;
+          const activeProperties = properties.filter((p: any) => !p.is_sold).length;
+          const soldProperties = properties.filter((p: any) => p.is_sold).length;
+          
+          setStats(prev => ({
+            ...prev,
+            totalProperties,
+            activeProperties,
+            soldProperties,
+          }));
+          
+          setRecentProperties(properties.slice(0, 5));
+        }
 
-  const activities = [
-    { text: `Properti baru: ${mockProperties[0]?.title?.slice(0, 35) || "—"}`, time: "2 jam lalu", icon: Home },
-    { text: `Lead baru: ${mockLeads.find(l => l.status === "new")?.name || "—"} (${mockLeads.find(l => l.status === "new")?.source || "—"})`, time: "4 jam lalu", icon: Users },
-    { text: `Kontrak ditandatangani: ${mockContracts.find(c => c.status === "active")?.contract_number || "—"}`, time: "1 hari lalu", icon: FileSignature },
-    { text: `Submission baru: ${mockSubmissions.find(s => s.status === "new")?.owner_name || "—"}`, time: "2 hari lalu", icon: FileText },
-    { text: `Properti diupdate: ${mockProperties[1]?.title?.slice(0, 32) || "—"}`, time: "3 hari lalu", icon: Clock },
-  ];
+        // Try to fetch leads (if API exists)
+        try {
+          const leadsRes = await fetch("/api/leads/list", {
+            headers: {
+              "Authorization": `Bearer ${localStorage.getItem("sbp_admin_token")}`,
+            },
+          });
+          if (leadsRes.ok) {
+            const leadsData = await leadsRes.json();
+            if (leadsData.success && leadsData.data) {
+              const leads = leadsData.data;
+              setStats(prev => ({
+                ...prev,
+                totalLeads: leads.length,
+                newLeads: leads.filter((l: any) => l.status === "new").length,
+                hotLeads: leads.filter((l: any) => l.priority === "hot").length,
+              }));
+            }
+          }
+        } catch (e) {
+          // Leads API might not exist yet
+          console.log("Leads API not available");
+        }
+
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  // Activities from recent properties
+  const activities = recentProperties.slice(0, 5).map((p, i) => ({
+    text: `Properti: ${p.title?.slice(0, 35) || "—"}`,
+    time: p.created_at ? new Date(p.created_at).toLocaleDateString("id-ID") : "—",
+    icon: Home,
+  }));
 
   return (
     <AdminLayout title="Dashboard Overview">
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <StatCard
-          icon={Home}
-          label="Total Properti"
-          value={totalProps}
-          sub={`${activeProps} tersedia`}
-          trend={`+2 bulan ini`}
-          color="blue"
-        />
-        <StatCard
-          icon={Tag}
-          label="Properti Aktif"
-          value={activeProps}
-          sub={`${activeProps} tersedia`}
-          trend={`${activeProps} tersedia`}
-          color="green"
-        />
-        <StatCard
-          icon={CheckCircle}
-          label="Terjual/Bulan"
-          value={latestMonth.deals}
-          sub={`+${revenueGrowth}%`}
-          trend={`+${revenueGrowth}% dari bulan lalu`}
-          color="gold"
-        />
-        <StatCard
-          icon={Users}
-          label="Lead Baru"
-          value={newLeads}
-          sub={`${newLeads} belum direspond`}
-          trend={`${newLeads} belum direspond`}
-          trendPositive={false}
-          color="red"
-        />
-      </div>
-
-      {/* Alert Bar */}
-      {(newLeads > 0 || newSubmissions > 0 || pendingContracts > 0) && (
-        <div className="flex flex-wrap gap-2 mb-5">
-          {newLeads > 0 && (
-            <Link href="/admin/leads">
-              <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-red-100 transition-colors">
-                <Activity className="w-4 h-4" />
-                {newLeads} lead baru menunggu respons →
-              </div>
-            </Link>
-          )}
-          {newSubmissions > 0 && (
-            <Link href="/admin/submissions">
-              <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-700 rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-amber-100 transition-colors">
-                <FileText className="w-4 h-4" />
-                {newSubmissions} form submission baru →
-              </div>
-            </Link>
-          )}
-          {pendingContracts > 0 && (
-            <Link href="/admin/contracts">
-              <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-blue-100 transition-colors">
-                <FileSignature className="w-4 h-4" />
-                {pendingContracts} kontrak menunggu tanda tangan →
-              </div>
-            </Link>
-          )}
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          <span className="ml-2 text-gray-500">Memuat data dashboard...</span>
         </div>
       )}
 
-      {/* Charts Row 1 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-1">Lead per Bulan (6 Bulan Terakhir)</h3>
-          <p className="text-xs text-gray-400 mb-4">6 bulan terakhir</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={mockAnalytics}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="leads" stroke="#1E3A8A" strokeWidth={2.5} dot={{ r: 4, fill: "#1E3A8A" }} name="Lead" activeDot={{ r: 6 }} />
-              <Line type="monotone" dataKey="deals" stroke="#F59E0B" strokeWidth={2.5} dot={{ r: 4, fill: "#F59E0B" }} name="Deal" activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+      {!loading && (
+        <>
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              icon={Home}
+              label="Total Properti"
+              value={stats.totalProperties}
+              sub={`${stats.activeProperties} tersedia`}
+              trend={`Database real`}
+              color="blue"
+            />
+            <StatCard
+              icon={Tag}
+              label="Properti Aktif"
+              value={stats.activeProperties}
+              sub={`${stats.activeProperties} tersedia`}
+              trend={`${stats.activeProperties} tersedia`}
+              color="green"
+            />
+            <StatCard
+              icon={CheckCircle}
+              label="Terjual"
+              value={stats.soldProperties}
+              sub={`Total terjual`}
+              trend={`Data dari database`}
+              color="gold"
+            />
+            <StatCard
+              icon={Users}
+              label="Lead Baru"
+              value={stats.newLeads}
+              sub={`${stats.newLeads} belum direspond`}
+              trend={`${stats.newLeads} belum direspond`}
+              trendPositive={false}
+              color="red"
+            />
+          </div>
 
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-1">Properti per Tipe</h3>
-          <p className="text-xs text-gray-400 mb-4">Distribusi listing aktif</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={mockPropertyTypes}
-                dataKey="count"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                outerRadius={75}
-                innerRadius={35}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                labelLine={false}
-              >
-                {mockPropertyTypes.map((_, i) => (
-                  <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(val, name) => [val, name]} />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Charts Row 2 */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-1">Lead Source Performance</h3>
-          <p className="text-xs text-gray-400 mb-4">Total lead per saluran pemasaran</p>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={mockLeadSources} barSize={32}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="source" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="leads" fill="#1E3A8A" radius={[4, 4, 0, 0]} name="Lead">
-                {mockLeadSources.map((_, i) => (
-                  <Cell key={i} fill={i === 0 ? "#1E3A8A" : i === 1 ? "#3B82F6" : i === 2 ? "#6366F1" : "#8B5CF6"} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-3">Aktivitas Terbaru</h3>
-          <div className="space-y-3">
-            {activities.map((a, i) => {
-              const Icon = a.icon;
-              return (
-                <div key={i} className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-full bg-[#1E3A8A]/10 flex items-center justify-center shrink-0 mt-0.5">
-                    <Icon className="w-3.5 h-3.5 text-[#1E3A8A]" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs text-gray-700 font-medium leading-snug">{a.text}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{a.time}</div>
-                  </div>
+          {/* Alert Bar */}
+          {stats.newLeads > 0 && (
+            <div className="flex flex-wrap gap-2 mb-5">
+              <Link href="/admin/leads">
+                <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm font-semibold cursor-pointer hover:bg-red-100 transition-colors">
+                  <Activity className="w-4 h-4" />
+                  {stats.newLeads} lead baru menunggu respons →
                 </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+              </Link>
+            </div>
+          )}
 
-      {/* Revenue Area Chart */}
-      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
-        <h3 className="font-bold text-gray-900 mb-1">Tren Revenue (6 Bulan Terakhir)</h3>
-        <p className="text-xs text-gray-400 mb-4">Estimasi komisi dari properti terjual</p>
-        <ResponsiveContainer width="100%" height={180}>
-          <AreaChart data={mockAnalytics}>
-            <defs>
-              <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#1E3A8A" stopOpacity={0.15} />
-                <stop offset="95%" stopColor="#1E3A8A" stopOpacity={0} />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} />
-            <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000000).toFixed(0)}jt`} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area type="monotone" dataKey="revenue" stroke="#1E3A8A" strokeWidth={2.5} fill="url(#revGrad)" name="Revenue" activeDot={{ r: 6 }} />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Bottom Row: Quick Actions + Revenue Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Quick Actions */}
-        <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { label: "Tambah Properti", icon: Plus, path: "/admin/properties/add", color: "bg-[#1E3A8A]" },
-              { label: "Lihat Lead", icon: Users, path: "/admin/leads", color: "bg-green-500", badge: newLeads },
-              { label: "Kontrak Baru", icon: FileSignature, path: "/admin/contracts/new", color: "bg-[#F59E0B]" },
-              { label: "Analytics", icon: BarChart3, path: "/admin/analytics", color: "bg-purple-500" },
-            ].map(q => {
-              const Icon = q.icon;
-              return (
-                <Link key={q.path} href={q.path}>
-                  <div className={`${q.color} text-white rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity relative min-h-[80px] justify-center`}>
-                    <Icon className="w-6 h-6" />
-                    <span className="text-xs font-semibold text-center leading-tight">{q.label}</span>
-                    {q.badge ? (
-                      <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                        {q.badge}
-                      </span>
-                    ) : null}
-                  </div>
+          {/* Recent Properties */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold text-gray-900">Properti Terbaru</h3>
+              <Link href="/admin/properties">
+                <Button variant="outline" size="sm">Lihat Semua</Button>
+              </Link>
+            </div>
+            {recentProperties.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">
+                <Home className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                <p>Belum ada properti. Tambahkan properti pertama Anda!</p>
+                <Link href="/admin/properties/add">
+                  <Button className="mt-4 bg-primary hover:bg-primary/90">
+                    <Plus className="w-4 h-4 mr-2" /> Tambah Properti
+                  </Button>
                 </Link>
-              );
-            })}
-          </div>
-          <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {[
-              { label: "Semua Properti", path: "/admin/properties", icon: Eye },
-              { label: "Form Submission", path: "/admin/submissions", icon: FileText },
-              { label: "Settings", path: "/admin/settings", icon: Activity },
-            ].map(q => {
-              const Icon = q.icon;
-              return (
-                <Link key={q.path} href={q.path}>
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 text-gray-600 hover:border-[#1E3A8A] hover:text-[#1E3A8A] cursor-pointer transition-colors text-sm font-medium">
-                    <Icon className="w-4 h-4" />
-                    {q.label}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {recentProperties.map((p, i) => (
+                  <div key={p.id || i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
+                    <img 
+                      src={p.image || "https://via.placeholder.com/100"} 
+                      alt={p.title}
+                      className="w-16 h-16 rounded-lg object-cover border border-gray-100"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 text-sm truncate">{p.title}</div>
+                      <div className="text-xs text-gray-500">{p.listing_code} · {p.property_type}</div>
+                      <div className="text-xs font-bold text-primary">{formatCurrency(p.price)}</div>
+                    </div>
+                    <div className="flex gap-1">
+                      <Link href={`/admin/properties/edit/${p.id}`}>
+                        <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
+                          <Eye className="w-4 h-4" />
+                        </button>
+                      </Link>
+                    </div>
                   </div>
-                </Link>
-              );
-            })}
+                ))}
+              </div>
+            )}
           </div>
-        </div>
 
-        {/* Revenue Summary */}
-        <div className="bg-gradient-to-b from-[#1E3A8A] to-[#0f2461] rounded-2xl p-5 text-white flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <DollarSign className="w-5 h-5 text-[#F59E0B]" />
-              <span className="text-sm font-semibold opacity-80">Ringkasan Bulan Ini</span>
-            </div>
-            <div>
-              <div className="text-xs opacity-60 mb-1">Total Komisi (Estimasi)</div>
-              <div className="text-2xl font-extrabold">{formatCurrency(latestMonth.revenue)}</div>
-              <div className="text-xs opacity-60 flex items-center gap-1 mt-1">
-                <ArrowUpRight className="w-3 h-3" />
-                +{revenueGrowth}% dari bulan lalu
-              </div>
-            </div>
-            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-2 gap-3">
-              <div>
-                <div className="text-xs opacity-60">Properti Terjual</div>
-                <div className="text-xl font-bold mt-0.5">{latestMonth.deals}</div>
-                <div className="text-xs opacity-50">Mar 2026</div>
-              </div>
-              <div>
-                <div className="text-xs opacity-60">Total Views</div>
-                <div className="text-xl font-bold mt-0.5">{latestMonth.views}</div>
-                <div className="text-xs opacity-50">bulan ini</div>
-              </div>
+          {/* Quick Actions */}
+          <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
+            <h3 className="font-bold text-gray-900 mb-4">Quick Actions</h3>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: "Tambah Properti", icon: Plus, path: "/admin/properties/add", color: "bg-[#1E3A8A]" },
+                { label: "Lihat Lead", icon: Users, path: "/admin/leads", color: "bg-green-500", badge: stats.newLeads },
+                { label: "Kontrak Baru", icon: FileSignature, path: "/admin/contracts/new", color: "bg-[#F59E0B]" },
+                { label: "Analytics", icon: BarChart3, path: "/admin/analytics", color: "bg-purple-500" },
+              ].map(q => {
+                const Icon = q.icon;
+                return (
+                  <Link key={q.path} href={q.path}>
+                    <div className={`${q.color} text-white rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer hover:opacity-90 transition-opacity relative min-h-[80px] justify-center`}>
+                      <Icon className="w-6 h-6" />
+                      <span className="text-xs font-semibold text-center leading-tight">{q.label}</span>
+                      {q.badge ? (
+                        <span className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                          {q.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-          <Link href="/admin/analytics">
-            <div className="mt-4 bg-white/10 hover:bg-white/20 transition-colors rounded-xl px-4 py-2.5 text-sm font-semibold text-center cursor-pointer flex items-center justify-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Lihat Analytics Lengkap
-            </div>
-          </Link>
-        </div>
-      </div>
+        </>
+      )}
     </AdminLayout>
   );
 }
