@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { AdminLayout } from "../components/AdminLayout";
 import { mockContracts, Contract } from "../data/mockData";
-import { Eye, Edit, Download, RefreshCw, X, PenLine, Trash2, Plus } from "lucide-react";
+import { Eye, Edit, Download, RefreshCw, X, PenLine, Trash2, Plus, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,17 +25,52 @@ const CONTRACT_TYPE_LABELS: Record<string, string> = {
   EXCLUSIVE_COMPANY: "Exclusive Company",
 };
 
+function handleExportPDF(contract: Contract) {
+  const content = `
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Kontrak ${contract.contract_number}</title>
+<style>body{font-family:Arial,sans-serif;padding:40px;max-width:800px;margin:auto}h1{text-align:center;color:#1E3A8A;font-size:18px}table{width:100%;border-collapse:collapse;margin:20px 0}td{padding:8px;border-bottom:1px solid #eee;font-size:14px}.label{font-weight:bold;color:#333;width:200px}.sign-area{margin-top:60px;display:flex;justify-content:space-between}.sign-box{width:45%;text-align:center}.sign-line{border-top:1px solid #333;margin-top:60px;padding-top:8px}</style></head>
+<body>
+<h1>PERJANJIAN JASA PEMASARAN<br>SALAM BUMI PROPERTY</h1>
+<p style="text-align:center;color:#666;font-size:12px">Nomor: ${contract.contract_number}</p>
+<table>
+<tr><td class="label">Nomor Kontrak</td><td>${contract.contract_number}</td></tr>
+<tr><td class="label">Nama Pemilik</td><td>${contract.owner_name}</td></tr>
+<tr><td class="label">Properti</td><td>${contract.property_title}</td></tr>
+<tr><td class="label">Kode Listing</td><td>${contract.listing_code}</td></tr>
+<tr><td class="label">Jenis Kontrak</td><td>${CONTRACT_TYPE_LABELS[contract.contract_type]}</td></tr>
+<tr><td class="label">Fee/Komisi</td><td>${contract.fee_percent}%</td></tr>
+<tr><td class="label">Tanggal Tanda Tangan</td><td>${contract.signed_date || "—"}</td></tr>
+<tr><td class="label">Berlaku Sampai</td><td>${contract.expiry_date || "—"}</td></tr>
+<tr><td class="label">Status</td><td>${contract.status.toUpperCase()}</td></tr>
+</table>
+<div class="sign-area">
+<div class="sign-box"><p>PIHAK I</p><p style="font-size:12px">CV Salam Bumi Property</p><div class="sign-line">Ardy Salam<br>Director</div></div>
+<div class="sign-box"><p>PIHAK II</p><p style="font-size:12px">${contract.owner_name}</p><div class="sign-line">Pemilik Properti</div></div>
+</div>
+<p style="text-align:center;color:#999;font-size:10px;margin-top:40px">Dicetak: ${new Date().toLocaleString("id-ID")} | Salam Bumi Property © 2026</p>
+</body></html>`;
+  const blob = new Blob([content], { type: "text/html" });
+  const url = URL.createObjectURL(blob);
+  const w = window.open(url, "_blank");
+  if (w) { w.onload = () => { w.print(); }; }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
 function SignatureModal({ onClose }: { onClose: () => void }) {
   const { toast } = useToast();
-  const sigRef = useRef<SignatureCanvas | null>(null);
+  const ownerSigRef = useRef<SignatureCanvas | null>(null);
+  const agentSigRef = useRef<SignatureCanvas | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [ownerName, setOwnerName] = useState("");
+  const [signStep, setSignStep] = useState<"owner" | "agent">("owner");
 
   const handleSave = () => {
     if (!agreed) { toast({ title: "Persetujuan diperlukan", description: "Centang kotak persetujuan terlebih dahulu.", variant: "destructive" }); return; }
     if (!ownerName) { toast({ title: "Nama diperlukan", description: "Masukkan nama pemilik.", variant: "destructive" }); return; }
-    if (sigRef.current?.isEmpty()) { toast({ title: "Tanda tangan diperlukan", description: "Silakan buat tanda tangan.", variant: "destructive" }); return; }
-    toast({ title: "Kontrak ditandatangani!", description: `Tanda tangan dari ${ownerName} berhasil disimpan. Kontrak diaktifkan.` });
+    if (ownerSigRef.current?.isEmpty()) { toast({ title: "Tanda tangan diperlukan", description: "Silakan buat tanda tangan pemilik.", variant: "destructive" }); return; }
+    const signedAt = new Date().toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" });
+    toast({ title: "Kontrak ditandatangani!", description: `Tanda tangan dari ${ownerName} dan Agent Ardy Salam berhasil disimpan. ${signedAt}` });
     onClose();
   };
 
@@ -57,21 +92,53 @@ function SignatureModal({ onClose }: { onClose: () => void }) {
             <Input placeholder="Nama lengkap pemilik properti" value={ownerName} onChange={e => setOwnerName(e.target.value)} />
           </div>
 
-          <div className="space-y-2">
-            <Label className="font-semibold">Tanda Tangan Pemilik</Label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
-              <SignatureCanvas
-                ref={sigRef}
-                penColor="#1E3A8A"
-                canvasProps={{ className: "w-full", height: 180 }}
-              />
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => sigRef.current?.clear()} className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1">
-                <Trash2 className="w-3 h-3" /> Hapus
-              </button>
-            </div>
+          {/* Step indicator */}
+          <div className="flex gap-2">
+            <button onClick={() => setSignStep("owner")} className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${signStep === "owner" ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              1. Tanda Tangan Pemilik
+            </button>
+            <button onClick={() => setSignStep("agent")} className={`flex-1 text-xs font-semibold py-2 rounded-lg transition-colors ${signStep === "agent" ? "bg-primary text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              2. Tanda Tangan Agent
+            </button>
           </div>
+
+          {/* Owner Signature */}
+          {signStep === "owner" && (
+            <div className="space-y-2">
+              <Label className="font-semibold">Tanda Tangan Pemilik</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
+                <SignatureCanvas
+                  ref={ownerSigRef}
+                  penColor="#1E3A8A"
+                  canvasProps={{ className: "w-full", height: 180 }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => ownerSigRef.current?.clear()} className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" /> Hapus
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Agent Signature */}
+          {signStep === "agent" && (
+            <div className="space-y-2">
+              <Label className="font-semibold">Tanda Tangan Agent (Ardy Salam)</Label>
+              <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden bg-gray-50">
+                <SignatureCanvas
+                  ref={agentSigRef}
+                  penColor="#1E3A8A"
+                  canvasProps={{ className: "w-full", height: 180 }}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => agentSigRef.current?.clear()} className="text-xs text-gray-500 hover:text-red-500 flex items-center gap-1">
+                  <Trash2 className="w-3 h-3" /> Hapus
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex items-start gap-3">
             <input type="checkbox" id="agree" checked={agreed} onChange={e => setAgreed(e.target.checked)} className="mt-0.5 w-4 h-4 accent-primary" />
@@ -133,7 +200,8 @@ export default function AdminContracts() {
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama Owner</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Properti</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Jenis</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Fee</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Tgl Tanda Tangan</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Expiry</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
                 <th className="text-center text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Aksi</th>
               </tr>
@@ -145,7 +213,8 @@ export default function AdminContracts() {
                   <td className="px-4 py-3 text-sm text-gray-700">{c.owner_name}</td>
                   <td className="px-4 py-3 hidden md:table-cell text-sm text-gray-600 max-w-[180px] truncate">{c.property_title}</td>
                   <td className="px-4 py-3 hidden lg:table-cell text-sm text-gray-600">{CONTRACT_TYPE_LABELS[c.contract_type]}</td>
-                  <td className="px-4 py-3 hidden lg:table-cell text-sm font-bold text-primary">{c.fee_percent}%</td>
+                  <td className="px-4 py-3 hidden xl:table-cell text-sm text-gray-600">{c.signed_date || "—"}</td>
+                  <td className="px-4 py-3 hidden xl:table-cell text-sm text-gray-600">{c.expiry_date || "—"}</td>
                   <td className="px-4 py-3"><span className={`text-xs font-bold px-2 py-1 rounded-full ${STATUS_COLORS[c.status]}`}>{STATUS_LABELS[c.status]}</span></td>
                   <td className="px-4 py-3">
                     <div className="flex items-center justify-center gap-1">
@@ -157,8 +226,11 @@ export default function AdminContracts() {
                       <button className="p-1.5 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Lihat">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => toast({ title: "Download PDF", description: "Mengunduh kontrak..." })} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Download PDF">
+                      <button onClick={() => handleExportPDF(c)} className="p-1.5 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors" title="Download PDF">
                         <Download className="w-4 h-4" />
+                      </button>
+                      <button onClick={() => handleExportPDF(c)} className="p-1.5 text-gray-400 hover:text-purple-500 hover:bg-purple-50 rounded-lg transition-colors hidden sm:block" title="Print">
+                        <Printer className="w-4 h-4" />
                       </button>
                       <button onClick={() => toast({ title: "Perpanjang", description: "Kontrak diperpanjang." })} className="p-1.5 text-gray-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="Perpanjang">
                         <RefreshCw className="w-4 h-4" />

@@ -54,6 +54,8 @@ export interface Property {
   google_maps_url: string;
   video_url: string | null;
   kost_type?: "Putra" | "Putri" | "Campur";
+  views?: number;
+  leads?: number;
 }
 
 const DEFAULT_IMAGE = "https://images.salambumi.xyz/kost%20dijual%20jogja.webp";
@@ -83,6 +85,8 @@ const baseProperty = {
   selling_reason: "Pindah luar kota",
   google_maps_url: "https://maps.google.com/?q=-7.7567,110.3655",
   video_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+  views: 0,
+  leads: 0,
 };
 
 export const mockProperties: Property[] = [
@@ -107,6 +111,8 @@ export const mockProperties: Property[] = [
     bathrooms: 3,
     floors: 2,
     facilities: ["Carport 2 Mobil", "Garden", "PAM", "Listrik 3500W", "AC", "Water Heater"],
+    views: 342,
+    leads: 18,
   },
   {
     ...baseProperty,
@@ -133,6 +139,8 @@ export const mockProperties: Property[] = [
     outstanding_amount: 1500000000,
     facilities: ["Full Furnished", "WiFi", "CCTV", "Parkir Luas", "Penjaga Kost", "Pemanas Air"],
     kost_type: "Campur",
+    views: 567,
+    leads: 32,
   },
   {
     ...baseProperty,
@@ -158,6 +166,8 @@ export const mockProperties: Property[] = [
     distance_to_river: 50,
     distance_to_powerline: 200,
     facilities: ["Akses Jalan Mobil", "Dekat Fasum", "View Sawah", "Pagar Keliling"],
+    views: 128,
+    leads: 7,
   },
   {
     ...baseProperty,
@@ -181,6 +191,8 @@ export const mockProperties: Property[] = [
     floors: 1,
     facilities: ["Private Pool", "Fully Furnished", "Gazebo", "Garden", "WiFi", "Smart TV"],
     distance_to_river: 8,
+    views: 891,
+    leads: 45,
   },
   {
     ...baseProperty,
@@ -204,6 +216,8 @@ export const mockProperties: Property[] = [
     floors: 2,
     facilities: ["Listrik 5500W", "Parkir 4 Mobil", "Kamar Mandi 2", "Air Sumur"],
     road_width: 10,
+    views: 203,
+    leads: 11,
   },
   {
     ...baseProperty,
@@ -230,6 +244,8 @@ export const mockProperties: Property[] = [
     outstanding_amount: 200000000,
     facilities: ["Kolam Renang", "Gym", "Security 24 Jam", "Access Card", "Full Furnished"],
     video_url: null,
+    views: 445,
+    leads: 22,
   },
   {
     ...baseProperty,
@@ -252,6 +268,8 @@ export const mockProperties: Property[] = [
     bathrooms: 2,
     floors: 1,
     facilities: ["One Gate System", "Security 24/7", "Taman Bermain", "Carport"],
+    views: 156,
+    leads: 8,
   },
   {
     ...baseProperty,
@@ -275,6 +293,8 @@ export const mockProperties: Property[] = [
     floors: 2,
     kost_type: "Putri",
     facilities: ["Kamar Mandi Dalam", "AC", "WiFi", "Dapur Bersama", "Ruang Santai"],
+    views: 289,
+    leads: 15,
   },
   {
     ...baseProperty,
@@ -301,6 +321,8 @@ export const mockProperties: Property[] = [
     outstanding_amount: 1000000000,
     distance_to_grave: 45,
     facilities: ["Akses Jalan Lebar", "Bentuk Kotak", "Tanah Datar", "Saluran Air"],
+    views: 95,
+    leads: 4,
   },
   {
     ...baseProperty,
@@ -324,6 +346,8 @@ export const mockProperties: Property[] = [
     bathrooms: 4,
     floors: 1,
     facilities: ["Pendopo", "Taman Luas", "Garasi 3 Mobil", "Kayu Jati Asli"],
+    views: 678,
+    leads: 28,
   },
   {
     ...baseProperty,
@@ -346,6 +370,8 @@ export const mockProperties: Property[] = [
     bathrooms: 4,
     floors: 2,
     facilities: ["Ocean View", "Infinity Pool", "Balkon", "Smart Home System"],
+    views: 412,
+    leads: 19,
   },
   {
     ...baseProperty,
@@ -368,5 +394,7 @@ export const mockProperties: Property[] = [
     bathrooms: 2,
     floors: 2,
     facilities: ["Rolling Door", "Parkir Motor", "Ex Rumah Makan", "Listrik 4400W"],
+    views: 167,
+    leads: 9,
   }
 ];

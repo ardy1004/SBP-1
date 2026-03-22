@@ -38,8 +38,14 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Check rate limit status on mount (do NOT clear it)
   useEffect(() => {
-    clearRateLimitState();
+    const rl = getRateLimitState();
+    const now = Date.now();
+    if (rl.lockedUntil > now) {
+      const minsLeft = Math.ceil((rl.lockedUntil - now) / 60000);
+      setError(`Terlalu banyak percobaan. Coba lagi dalam ${minsLeft} menit.`);
+    }
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -223,7 +229,7 @@ export default function AdminLogin() {
           {/* Footer */}
           <div className="bg-gray-50 px-8 py-4 text-center border-t border-gray-100">
             <p className="text-gray-400 text-xs">© 2026 Salam Bumi Property. Semua hak dilindungi.</p>
-            <p className="text-gray-300 text-xs mt-0.5">Protected by bcrypt + session security</p>
+            <p className="text-gray-300 text-xs mt-0.5">Protected by bcrypt hashing + session security</p>
           </div>
         </div>
 

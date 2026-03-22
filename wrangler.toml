@@ -1,0 +1,14 @@
+name = "salambumi-property"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "artifacts/salam-bumi/dist/public"
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "salambumi-property-db"
+database_id = "b18256d7-e4b8-4bc9-addc-31ad230898ce"
+
+# R2 Bucket
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "images"

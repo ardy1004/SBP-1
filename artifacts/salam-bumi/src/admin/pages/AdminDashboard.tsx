@@ -97,7 +97,7 @@ export default function AdminDashboard() {
   const activities = [
     { text: `Properti baru: ${mockProperties[0]?.title?.slice(0, 35) || "—"}`, time: "2 jam lalu", icon: Home },
     { text: `Lead baru: ${mockLeads.find(l => l.status === "new")?.name || "—"} (${mockLeads.find(l => l.status === "new")?.source || "—"})`, time: "4 jam lalu", icon: Users },
-    { text: `Kontrak aktif: ${mockContracts.find(c => c.status === "active")?.contract_number || "—"}`, time: "1 hari lalu", icon: FileSignature },
+    { text: `Kontrak ditandatangani: ${mockContracts.find(c => c.status === "active")?.contract_number || "—"}`, time: "1 hari lalu", icon: FileSignature },
     { text: `Submission baru: ${mockSubmissions.find(s => s.status === "new")?.owner_name || "—"}`, time: "2 hari lalu", icon: FileText },
     { text: `Properti diupdate: ${mockProperties[1]?.title?.slice(0, 32) || "—"}`, time: "3 hari lalu", icon: Clock },
   ];
@@ -111,23 +111,23 @@ export default function AdminDashboard() {
           icon={Home}
           label="Total Properti"
           value={totalProps}
-          sub={`${soldProps} terjual`}
-          trend="+2 bulan ini"
+          sub={`${activeProps} tersedia`}
+          trend={`+2 bulan ini`}
           color="blue"
         />
         <StatCard
           icon={Tag}
           label="Properti Aktif"
           value={activeProps}
-          sub={`${hotLeads} hot leads`}
+          sub={`${activeProps} tersedia`}
           trend={`${activeProps} tersedia`}
           color="green"
         />
         <StatCard
           icon={CheckCircle}
-          label="Terjual Bulan Ini"
+          label="Terjual/Bulan"
           value={latestMonth.deals}
-          sub={`${activeContracts} kontrak aktif`}
+          sub={`+${revenueGrowth}%`}
           trend={`+${revenueGrowth}% dari bulan lalu`}
           color="gold"
         />
@@ -135,7 +135,7 @@ export default function AdminDashboard() {
           icon={Users}
           label="Lead Baru"
           value={newLeads}
-          sub={`${newSubmissions} submission baru`}
+          sub={`${newLeads} belum direspond`}
           trend={`${newLeads} belum direspond`}
           trendPositive={false}
           color="red"
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
-          <h3 className="font-bold text-gray-900 mb-1">Lead & Deal per Bulan</h3>
+          <h3 className="font-bold text-gray-900 mb-1">Lead per Bulan (6 Bulan Terakhir)</h3>
           <p className="text-xs text-gray-400 mb-4">6 bulan terakhir</p>
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={mockAnalytics}>
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
             {[
               { label: "Tambah Properti", icon: Plus, path: "/admin/properties/add", color: "bg-[#1E3A8A]" },
               { label: "Lihat Lead", icon: Users, path: "/admin/leads", color: "bg-green-500", badge: newLeads },
-              { label: "Kontrak Baru", icon: FileSignature, path: "/admin/contracts", color: "bg-[#F59E0B]" },
+              { label: "Kontrak Baru", icon: FileSignature, path: "/admin/contracts/new", color: "bg-[#F59E0B]" },
               { label: "Analytics", icon: BarChart3, path: "/admin/analytics", color: "bg-purple-500" },
             ].map(q => {
               const Icon = q.icon;

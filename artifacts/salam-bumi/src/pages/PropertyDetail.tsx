@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { mockProperties, Property } from "@/data/properties";
+import { propertiesApi } from "@/lib/api-client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ContactAgentForm } from "@/components/ContactAgentForm";
@@ -30,7 +31,61 @@ export default function PropertyDetail() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   
-  const property = mockProperties.find(p => p.slug === slug);
+  const [property, setProperty] = useState<Property | undefined>(
+    mockProperties.find(p => p.slug === slug)
+  );
+  const [loading, setLoading] = useState(true);
+
+  // Fetch dari API, fallback ke mock data
+  useEffect(() => {
+    const fetchProperty = async () => {
+      if (!slug) return;
+      try {
+        const result = await propertiesApi.getBySlug(slug);
+        if (result.success && result.data) {
+          const d = result.data;
+          setProperty({
+            id: d.id,
+            listing_code: d.listing_code,
+            title: d.title,
+            slug: d.slug,
+            price: d.price,
+            old_price: d.old_price,
+            purpose: d.purpose as any,
+            type: d.property_type as any,
+            location: d.location,
+            specs: { lt: d.land_area, lb: d.building_area, kt: d.bedrooms, km: d.bathrooms, lantai: d.floors },
+            images: d.images?.length ? d.images.map((i: any) => i.url) : (d.image ? [d.image] : property?.images || []),
+            badges: { is_premium: d.is_premium, is_featured: d.is_featured, is_hot: d.is_hot, is_sold: d.is_sold, is_choice: d.is_choice },
+            legalitas: d.legal_status || "",
+            status_legalitas: d.ownership_status as any || "On Hand",
+            city: d.city,
+            district: d.district || "",
+            province: d.province,
+            address: d.address || "",
+            land_area: d.land_area,
+            building_area: d.building_area,
+            bedrooms: d.bedrooms,
+            bathrooms: d.bathrooms,
+            floors: d.floors,
+            description: d.description || "",
+            facilities: d.facilities || [],
+            legal_status: d.legal_status as any,
+            bank_name: d.bank_name,
+            outstanding_amount: d.outstanding_amount,
+            road_width: d.road_width,
+            selling_reason: d.selling_reason,
+          } as Property);
+        }
+      } catch {
+        // API tidak tersedia, gunakan mock data yang sudah di-set
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperty();
+  }, [slug]);
   
   const [thumbsSwiper, setThumbsSwiper] = useState<SwiperClass | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -454,7 +509,7 @@ export default function PropertyDetail() {
                     )}
                     <div className="flex items-center gap-4 p-4 rounded-xl border bg-gray-50 border-gray-100">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 bg-gray-200 text-gray-600">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinelinejoin="round"><path d="M4 18h16"/><path d="M4 14h16"/><path d="M4 10h16"/><path d="M4 6h16"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 18h16"/><path d="M4 14h16"/><path d="M4 10h16"/><path d="M4 6h16"/></svg>
                       </div>
                       <div>
                         <div className="text-sm font-medium text-gray-700">Lebar Jalan Depan</div>

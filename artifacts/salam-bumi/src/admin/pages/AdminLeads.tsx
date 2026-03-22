@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AdminLayout } from "../components/AdminLayout";
 import { mockLeads, Lead } from "../data/mockData";
-import { Search, Eye, MessageCircle, Calendar, FileText, ChevronDown, Flame, Sun, Snowflake, X } from "lucide-react";
+import { Search, Eye, MessageCircle, Calendar, FileText, ChevronDown, Flame, Sun, Snowflake, X, Clock, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -31,11 +31,20 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
   const { toast } = useToast();
   const [note, setNote] = useState(lead.notes);
   const [status, setStatus] = useState(lead.status);
+  const [followupDate, setFollowupDate] = useState(lead.next_followup?.slice(0, 16) || "");
 
-  const handleWA = () => {
-    const msg = `Halo ${lead.name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti ${lead.property_interest}. Admin kami akan segera merespons.`;
+  const handleWA = (template?: string) => {
+    let msg = template || `Halo ${lead.name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti ${lead.property_interest}. Admin kami akan segera merespons.`;
+    msg = msg.replace("{name}", lead.name).replace("{property_title}", lead.property_interest);
     window.open(`https://wa.me/${lead.whatsapp}?text=${encodeURIComponent(msg)}`, '_blank');
   };
+
+  const waTemplates = [
+    { label: "Respon Awal", msg: `Halo {name}! Terima kasih telah menghubungi Salam Bumi Property. Kami telah menerima inquiry Anda untuk properti {property_title}. Admin kami akan segera merespons. Untuk urgent, silakan telepon 0813-9127-8889.` },
+    { label: "Konfirmasi Viewing", msg: `Halo {name}! Konfirmasi jadwal kunjungan properti {property_title}. Mohon konfirmasi ketersediaan waktu Anda.` },
+    { label: "Follow-up", msg: `Halo {name}! Apakah Anda masih tertarik dengan properti {property_title}? Ada yang bisa kami bantu?` },
+    { label: "Deal Closed", msg: `Selamat {name}! Transaksi properti {property_title} telah berhasil. Terima kasih telah percaya pada Salam Bumi Property!` },
+  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -70,8 +79,53 @@ function LeadDetailModal({ lead, onClose }: { lead: Lead; onClose: () => void })
             <label className="text-sm font-semibold text-gray-700">Catatan Internal</label>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={3} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary/30" placeholder="Tambahkan catatan..." />
           </div>
+
+          {/* Follow-up Date */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Next Follow-up</label>
+            <input type="datetime-local" value={followupDate} onChange={e => setFollowupDate(e.target.value)} className="mt-1 w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+          </div>
+
+          {/* Communication History */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Riwayat Komunikasi</label>
+            <div className="mt-2 space-y-2 border-l-2 border-gray-200 pl-4">
+              <div className="relative">
+                <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-blue-400 border-2 border-white" />
+                <div className="text-xs text-gray-500">{new Date(lead.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                <div className="text-sm text-gray-700 font-medium">Lead masuk via {lead.source}</div>
+              </div>
+              {lead.last_contact && (
+                <div className="relative">
+                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-green-400 border-2 border-white" />
+                  <div className="text-xs text-gray-500">{new Date(lead.last_contact).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                  <div className="text-sm text-gray-700 font-medium">Terakhir dihubungi</div>
+                </div>
+              )}
+              {lead.next_followup && (
+                <div className="relative">
+                  <div className="absolute -left-[21px] w-3 h-3 rounded-full bg-amber-400 border-2 border-white" />
+                  <div className="text-xs text-gray-500">{new Date(lead.next_followup).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}</div>
+                  <div className="text-sm text-gray-700 font-medium">Follow-up terjadwal</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* WA Templates */}
+          <div>
+            <label className="text-sm font-semibold text-gray-700">Template WhatsApp</label>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              {waTemplates.map(t => (
+                <button key={t.label} onClick={() => handleWA(t.msg)} className="text-xs border border-gray-200 rounded-lg px-3 py-2 text-gray-600 hover:border-green-400 hover:text-green-600 hover:bg-green-50 transition-colors text-left">
+                  {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex gap-2">
-            <Button onClick={handleWA} className="flex-1 gap-2 bg-[#25D366] hover:bg-[#20bf5a]">
+            <Button onClick={() => handleWA()} className="flex-1 gap-2 bg-[#25D366] hover:bg-[#20bf5a]">
               <MessageCircle className="w-4 h-4" /> Kirim WhatsApp
             </Button>
             <Button onClick={() => { toast({ title: "Tersimpan", description: "Perubahan lead berhasil disimpan." }); onClose(); }} className="flex-1 bg-primary hover:bg-primary/90">
@@ -88,14 +142,18 @@ export default function AdminLeads() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
+  const [sourceFilter, setSourceFilter] = useState("All");
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+
+  const leadSources = ["All", "Website Form", "WhatsApp Direct", "Facebook", "Instagram", "Google Organic", "Referral"];
 
   const filtered = mockLeads.filter(l => {
     const matchSearch = !search || l.name.toLowerCase().includes(search.toLowerCase()) ||
       l.whatsapp.includes(search) || l.property_interest.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "All" || l.status === statusFilter;
     const matchPriority = priorityFilter === "All" || l.priority === priorityFilter.toLowerCase();
-    return matchSearch && matchStatus && matchPriority;
+    const matchSource = sourceFilter === "All" || l.source === sourceFilter;
+    return matchSearch && matchStatus && matchPriority && matchSource;
   });
 
   return (
@@ -126,6 +184,9 @@ export default function AdminLeads() {
         <select value={priorityFilter} onChange={e => setPriorityFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
           {["All", "HOT", "WARM", "COLD"].map(p => <option key={p}>{p}</option>)}
         </select>
+        <select value={sourceFilter} onChange={e => setSourceFilter(e.target.value)} className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30">
+          {leadSources.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
       {/* Table */}
@@ -136,8 +197,10 @@ export default function AdminLeads() {
               <tr className="bg-gray-50 border-b border-gray-100">
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Priority</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Nama</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden md:table-cell">Properti</th>
-                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Budget</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden md:table-cell">WhatsApp</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Properti</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Last Contact</th>
+                <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden xl:table-cell">Follow-up</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3 hidden lg:table-cell">Sumber</th>
                 <th className="text-left text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Status</th>
                 <th className="text-center text-xs font-bold text-gray-500 uppercase tracking-wider px-4 py-3">Aksi</th>
@@ -156,10 +219,16 @@ export default function AdminLeads() {
                       <div className="text-xs text-gray-400">{l.origin} · {l.role}</div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
-                      <div className="text-sm text-gray-700 truncate max-w-[180px]">{l.property_interest}</div>
+                      <a href={`https://wa.me/${l.whatsapp}`} target="_blank" rel="noreferrer" className="text-sm text-green-600 hover:underline">{l.whatsapp}</a>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <div className="text-sm text-gray-700">{l.budget}</div>
+                      <div className="text-sm text-gray-700 truncate max-w-[180px]">{l.property_interest}</div>
+                    </td>
+                    <td className="px-4 py-3 hidden xl:table-cell">
+                      <div className="text-sm text-gray-500">{l.last_contact ? new Date(l.last_contact).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "—"}</div>
+                    </td>
+                    <td className="px-4 py-3 hidden xl:table-cell">
+                      <div className="text-sm text-gray-500">{l.next_followup ? new Date(l.next_followup).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "—"}</div>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
                       <div className="text-sm text-gray-500">{l.source}</div>

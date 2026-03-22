@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { SearchForm } from "@/components/SearchForm";
 import { PropertyCard } from "@/components/PropertyCard";
 import { mockProperties } from "@/data/properties";
+import { propertiesApi } from "@/lib/api-client";
+import type { Property } from "@/lib/api-client";
 import { Button } from "@/components/ui/button";
 
 import { Swiper, SwiperSlide } from 'swiper/react';
@@ -12,11 +14,89 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 
+/**
+ * Convert API Property ke format yang dibutuhkan PropertyCard
+ */
+function apiPropertyToMock(apiProp: Property) {
+  return {
+    id: apiProp.id,
+    listing_code: apiProp.listing_code || "",
+    title: apiProp.title,
+    slug: apiProp.slug,
+    price: apiProp.price,
+    old_price: apiProp.old_price,
+    purpose: apiProp.purpose as "Dijual" | "Disewa" | "Dijual & Disewa",
+    type: (apiProp.property_type || "Rumah") as any,
+    location: apiProp.location,
+    specs: {
+      lt: apiProp.land_area,
+      lb: apiProp.building_area,
+      kt: apiProp.bedrooms,
+      km: apiProp.bathrooms,
+      lantai: apiProp.floors,
+    },
+    images: apiProp.image ? [apiProp.image] : ["https://images.salambumi.xyz/kost%20dijual%20jogja.webp"],
+    badges: {
+      is_premium: apiProp.is_premium,
+      is_featured: apiProp.is_featured,
+      is_hot: apiProp.is_hot,
+      is_sold: apiProp.is_sold,
+      is_choice: apiProp.is_choice,
+    },
+    legalitas: (apiProp as any).legal_status || "",
+    status_legalitas: ((apiProp as any).ownership_status || "On Hand") as "On Hand" | "On Bank",
+    province: apiProp.province,
+    city: apiProp.city,
+    district: apiProp.district || "",
+    village: (apiProp as any).village || "",
+    address: (apiProp as any).address || "",
+    land_area: apiProp.land_area,
+    building_area: apiProp.building_area,
+    front_width: (apiProp as any).front_width || 0,
+    floors: apiProp.floors,
+    bedrooms: apiProp.bedrooms,
+    bathrooms: apiProp.bathrooms,
+    legal_status: ((apiProp as any).legal_status || "SHM & IMB/PBG Lengkap") as any,
+    legal_details: (apiProp as any).legal_details || "",
+    bank_name: (apiProp as any).bank_name || null,
+    outstanding_amount: (apiProp as any).outstanding_amount || null,
+    distance_to_river: null,
+    distance_to_grave: null,
+    distance_to_powerline: null,
+    road_width: (apiProp as any).road_width || 6,
+    description: apiProp.description || "",
+    facilities: apiProp.facilities || [],
+    selling_reason: (apiProp as any).selling_reason || "",
+    google_maps_url: "",
+    video_url: null,
+  };
+}
+
 export default function Home() {
+  const [properties, setProperties] = useState(mockProperties);
   const [visibleCount, setVisibleCount] = useState(8);
-  
-  const choiceProperties = mockProperties.filter(p => p.badges.is_choice);
-  const gridProperties = mockProperties.slice(0, visibleCount);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const result = await propertiesApi.getAll({ limit: 50 });
+        if (result.success && result.data.length > 0) {
+          setProperties(result.data.map(apiPropertyToMock));
+        }
+      } catch {
+        // API tidak tersedia, gunakan mock data (sudah di-set default)
+        console.info("Menggunakan mock data (API tidak tersedia)");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProperties();
+  }, []);
+
+  const choiceProperties = properties.filter((p: any) => p.badges.is_choice);
+  const gridProperties = properties.slice(0, visibleCount);
 
   return (
     <div className="min-h-screen bg-gray-50/50 flex flex-col font-sans">
@@ -72,27 +152,35 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="relative w-full overflow-hidden rounded-2xl pt-4 pb-12 px-2">
-              <Swiper
-                modules={[Autoplay, Navigation, Pagination]}
-                spaceBetween={24}
-                slidesPerView={1}
-                breakpoints={{
-                  640: { slidesPerView: 2 },
-                  1024: { slidesPerView: 3 },
-                }}
-                autoplay={{ delay: 5000, disableOnInteraction: false }}
-                navigation
-                pagination={{ clickable: true, dynamicBullets: true }}
-                className="w-full !px-2 !pb-12"
-              >
-                {choiceProperties.map((property) => (
-                  <SwiperSlide key={property.id} className="h-auto pb-4">
-                    <PropertyCard property={property} />
-                  </SwiperSlide>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
                 ))}
-              </Swiper>
-            </div>
+              </div>
+            ) : (
+              <div className="relative w-full overflow-hidden rounded-2xl pt-4 pb-12 px-2">
+                <Swiper
+                  modules={[Autoplay, Navigation, Pagination]}
+                  spaceBetween={24}
+                  slidesPerView={1}
+                  breakpoints={{
+                    640: { slidesPerView: 2 },
+                    1024: { slidesPerView: 3 },
+                  }}
+                  autoplay={{ delay: 5000, disableOnInteraction: false }}
+                  navigation
+                  pagination={{ clickable: true, dynamicBullets: true }}
+                  className="w-full !px-2 !pb-12"
+                >
+                  {choiceProperties.map((property: any) => (
+                    <SwiperSlide key={property.id} className="h-auto pb-4">
+                      <PropertyCard property={property} />
+                    </SwiperSlide>
+                  ))}
+                </Swiper>
+              </div>
+            )}
           </div>
         </section>
 
@@ -106,21 +194,31 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
-              {gridProperties.map(property => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
-            </div>
-
-            {visibleCount < mockProperties.length && (
-              <div className="flex justify-center">
-                <Button 
-                  onClick={() => setVisibleCount(prev => Math.min(prev + 8, mockProperties.length))}
-                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
-                >
-                  Muat Lebih Banyak Properti
-                </Button>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="bg-gray-100 rounded-2xl h-80 animate-pulse" />
+                ))}
               </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 mb-12">
+                  {gridProperties.map((property: any) => (
+                    <PropertyCard key={property.id} property={property} />
+                  ))}
+                </div>
+
+                {visibleCount < properties.length && (
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => setVisibleCount(prev => Math.min(prev + 8, properties.length))}
+                      className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
+                    >
+                      Muat Lebih Banyak Properti
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </section>

@@ -6,7 +6,9 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend
 } from "recharts";
-import { TrendingUp, Eye, Users, ShoppingCart, DollarSign } from "lucide-react";
+import { TrendingUp, Eye, Users, ShoppingCart, DollarSign, Download, FileText, Clock, MousePointer } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const COLORS = ["#1E3A8A", "#F59E0B", "#10B981", "#8B5CF6", "#EF4444"];
 
@@ -40,19 +42,74 @@ function MetricCard({ icon: Icon, label, value, sub, color }: { icon: React.Elem
 }
 
 export default function AdminAnalytics() {
+  const { toast } = useToast();
   const totalRevenue = mockAnalytics.reduce((a, b) => a + b.revenue, 0);
   const totalLeads = mockAnalytics.reduce((a, b) => a + b.leads, 0);
   const totalDeals = mockAnalytics.reduce((a, b) => a + b.deals, 0);
   const totalViews = mockAnalytics.reduce((a, b) => a + b.views, 0);
+  const avgDealValue = totalDeals > 0 ? Math.round(totalRevenue / totalDeals) : 0;
+
+  const handleExportCSV = () => {
+    const headers = ["Month", "Views", "Leads", "Deals", "Revenue"];
+    const rows = mockAnalytics.map(a => [a.month, a.views, a.leads, a.deals, a.revenue]);
+    const csv = [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "analytics-sbp.csv"; a.click();
+    URL.revokeObjectURL(url);
+    toast({ title: "Export CSV", description: "Data analytics berhasil diunduh." });
+  };
 
   return (
     <AdminLayout title="Analytics & Performance">
+      {/* Header with Export */}
+      <div className="flex justify-between items-center mb-4">
+        <div />
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="gap-2">
+            <Download className="w-4 h-4" /> Export CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => toast({ title: "Export PDF", description: "Fitur PDF akan segera tersedia." })} className="gap-2">
+            <FileText className="w-4 h-4" /> Export PDF
+          </Button>
+        </div>
+      </div>
+
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         <MetricCard icon={Eye} label="Total Views" value={totalViews.toLocaleString("id-ID")} sub="+18% vs periode lalu" color="blue" />
         <MetricCard icon={Users} label="Total Leads" value={totalLeads.toString()} sub="+22% vs periode lalu" color="gold" />
         <MetricCard icon={ShoppingCart} label="Total Deals" value={totalDeals.toString()} sub="+30% vs periode lalu" color="green" />
         <MetricCard icon={DollarSign} label="Total Komisi" value={formatCurrency(totalRevenue)} sub="+25% vs periode lalu" color="purple" />
+        <MetricCard icon={TrendingUp} label="Avg Deal Value" value={formatCurrency(avgDealValue)} sub="Rata-rata nilai deal" color="gold" />
+      </div>
+
+      {/* Traffic Overview */}
+      <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 mb-4">
+        <h3 className="font-bold text-gray-900 mb-4">Traffic Overview</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div className="text-center p-3 bg-blue-50 rounded-xl">
+            <Eye className="w-5 h-5 text-blue-600 mx-auto mb-1" />
+            <div className="text-xl font-bold text-gray-900">{totalViews.toLocaleString()}</div>
+            <div className="text-xs text-gray-500">Total Visitors</div>
+          </div>
+          <div className="text-center p-3 bg-green-50 rounded-xl">
+            <MousePointer className="w-5 h-5 text-green-600 mx-auto mb-1" />
+            <div className="text-xl font-bold text-gray-900">38.5%</div>
+            <div className="text-xs text-gray-500">Bounce Rate</div>
+          </div>
+          <div className="text-center p-3 bg-amber-50 rounded-xl">
+            <Clock className="w-5 h-5 text-amber-600 mx-auto mb-1" />
+            <div className="text-xl font-bold text-gray-900">4:32</div>
+            <div className="text-xs text-gray-500">Avg Session</div>
+          </div>
+          <div className="text-center p-3 bg-purple-50 rounded-xl">
+            <TrendingUp className="w-5 h-5 text-purple-600 mx-auto mb-1" />
+            <div className="text-xl font-bold text-gray-900">{((totalLeads / totalViews) * 100).toFixed(1)}%</div>
+            <div className="text-xs text-gray-500">Conversion Rate</div>
+          </div>
+        </div>
       </div>
 
       {/* Traffic & Revenue */}

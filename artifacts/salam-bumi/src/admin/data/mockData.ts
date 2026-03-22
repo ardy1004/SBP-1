@@ -93,6 +93,7 @@ export const mockPropertyTypes = [
   { name: "Tanah", count: 2, color: "#10B981" },
   { name: "Villa", count: 1, color: "#8B5CF6" },
   { name: "Ruko", count: 1, color: "#EF4444" },
+  { name: "Lainnya", count: 0, color: "#06B6D4" },
 ];
 
 export const mockLeadSources = [

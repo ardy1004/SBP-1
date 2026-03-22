@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { User, Building2, Bell, Shield, Search, Database, Save, Eye, EyeOff } from "lucide-react";
+import { User, Building2, Bell, Shield, Search, Database, Save, Eye, EyeOff, Download, Upload, Clock, Trash2 } from "lucide-react";
 
 function Section({ title, icon: Icon, children }: { title: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
@@ -44,6 +44,7 @@ export default function AdminSettings() {
     defaultTitle: "Salam Bumi Property - Agen Properti Yogyakarta Terpercaya",
     defaultDesc: "Temukan properti impian Anda di Yogyakarta. Rumah, Kost, Tanah, Villa, Ruko dijual dan disewakan.",
     gaId: "G-XXXXXXXXXX",
+    searchConsole: "",
   });
 
   const save = (section: string) => toast({ title: "Tersimpan!", description: `Pengaturan ${section} berhasil disimpan.` });
@@ -143,6 +144,10 @@ export default function AdminSettings() {
               <Label>Google Analytics ID</Label>
               <Input placeholder="G-XXXXXXXXXX" value={seo.gaId} onChange={e => setSeo(s => ({ ...s, gaId: e.target.value }))} />
             </div>
+            <div className="space-y-1.5">
+              <Label>Google Search Console Verification</Label>
+              <Input placeholder="Kode verifikasi dari Google Search Console" value={seo.searchConsole} onChange={e => setSeo(s => ({ ...s, searchConsole: e.target.value }))} />
+            </div>
           </div>
           <Button onClick={() => save("SEO")} className="mt-4 gap-2 bg-primary hover:bg-primary/90"><Save className="w-4 h-4" />Simpan</Button>
         </Section>
@@ -163,6 +168,56 @@ export default function AdminSettings() {
                 <span className={`text-xs font-bold px-2 py-1 rounded-full ${s.status === "Aktif" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{s.status}</span>
               </div>
             ))}
+          </div>
+        </Section>
+
+        {/* Activity Log */}
+        <Section title="Activity Log" icon={Clock}>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {(() => {
+              try {
+                const logs = JSON.parse(localStorage.getItem("sbp_activity_log") || "[]");
+                if (logs.length === 0) return <p className="text-sm text-gray-400">Belum ada aktivitas tercatat.</p>;
+                return logs.slice(0, 20).map((log: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 text-sm">
+                    <span className="text-gray-700">{log.action}</span>
+                    <span className="text-xs text-gray-400">{log.timestamp ? new Date(log.timestamp).toLocaleString("id-ID") : ""}</span>
+                  </div>
+                ));
+              } catch { return <p className="text-sm text-gray-400">Belum ada aktivitas tercatat.</p>; }
+            })()}
+          </div>
+        </Section>
+
+        {/* Backup & Export */}
+        <Section title="Backup & Export" icon={Database}>
+          <div className="space-y-3">
+            <p className="text-sm text-gray-500">Kelola data dan cadangan dashboard Anda.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={() => {
+                const data = {
+                  properties: JSON.parse(localStorage.getItem("sbp_properties") || "[]"),
+                  leads: JSON.parse(localStorage.getItem("sbp_leads") || "[]"),
+                  contracts: JSON.parse(localStorage.getItem("sbp_contracts") || "[]"),
+                  settings: { profile, company, seo, notifications },
+                  exportedAt: new Date().toISOString(),
+                };
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "sbp-backup.json"; a.click();
+                URL.revokeObjectURL(url);
+                toast({ title: "Export Berhasil", description: "Data berhasil diunduh." });
+              }} className="gap-2">
+                <Download className="w-4 h-4" /> Export Semua Data
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => toast({ title: "Import", description: "Pilih file JSON untuk import data." })} className="gap-2">
+                <Upload className="w-4 h-4" /> Import Data
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => toast({ title: "Backup Dibuat", description: "Backup otomatis tersimpan." })} className="gap-2">
+                <Database className="w-4 h-4" /> Buat Backup
+              </Button>
+            </div>
           </div>
         </Section>
 

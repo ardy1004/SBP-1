@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { AdminLayout } from "../components/AdminLayout";
 import { mockSubmissions, Submission } from "../data/mockData";
-import { Eye, Check, X, FilePlus, MessageCircle } from "lucide-react";
+import { Eye, Check, X, FilePlus, MessageCircle, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
@@ -38,6 +38,26 @@ function SubmissionDetailModal({ sub, onClose }: { sub: Submission; onClose: () 
             <div><div className="text-gray-500 font-medium">Status</div><span className={`text-xs font-bold px-2 py-1 rounded-full mt-0.5 inline-block ${STATUS_COLORS[sub.status]}`}>{STATUS_LABELS[sub.status]}</span></div>
             {sub.notes && <div className="col-span-2"><div className="text-gray-500 font-medium">Catatan</div><div className="text-gray-700 bg-gray-50 p-3 rounded-lg mt-1">{sub.notes}</div></div>}
           </div>
+
+          {/* Opsi Perjanjian */}
+          <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-100">
+            <div className="text-sm font-semibold text-blue-800 mb-1">Opsi Perjanjian Dipilih</div>
+            <div className="text-sm text-blue-700">Open Listing (3% fee) — Standar</div>
+          </div>
+
+          {/* Upload Dokumen */}
+          <div className="mt-3">
+            <div className="text-sm font-semibold text-gray-700 mb-2">Dokumen Terlampir</div>
+            <div className="flex flex-wrap gap-2">
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600">
+                <FileText className="w-4 h-4 text-gray-400" /> KTP_Pemilik.pdf
+              </div>
+              <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-600">
+                <FileText className="w-4 h-4 text-gray-400" /> Sertifikat_Tanah.pdf
+              </div>
+            </div>
+          </div>
+
           <div className="flex gap-2 pt-2">
             <a href={`https://wa.me/${sub.whatsapp}?text=${encodeURIComponent("Halo, kami sudah menerima submission properti Anda dan sedang dalam proses peninjauan.")}`} target="_blank" rel="noreferrer">
               <Button variant="outline" size="sm" className="gap-2"><MessageCircle className="w-4 h-4" />WhatsApp</Button>
