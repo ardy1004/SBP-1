@@ -18,6 +18,8 @@ import AdminContractsNew from "@/admin/pages/AdminContractsNew";
 import AdminLeads from "@/admin/pages/AdminLeads";
 import AdminAnalytics from "@/admin/pages/AdminAnalytics";
 import AdminSettings from "@/admin/pages/AdminSettings";
+import ImportCsv from "@/admin/pages/ImportCsv";
+import ImportHistory from "@/admin/pages/ImportHistory";
 
 const queryClient = new QueryClient();
 
@@ -58,6 +60,8 @@ function Router() {
       <Route path="/admin/leads" component={() => <ProtectedRoute component={AdminLeads} />} />
       <Route path="/admin/analytics" component={() => <ProtectedRoute component={AdminAnalytics} />} />
       <Route path="/admin/settings" component={() => <ProtectedRoute component={AdminSettings} />} />
+      <Route path="/admin/import-csv" component={() => <ProtectedRoute component={ImportCsv} />} />
+      <Route path="/admin/import-history" component={() => <ProtectedRoute component={ImportHistory} />} />
       <Route path="/admin" component={() => <Redirect to="/admin/dashboard" />} />
 
       <Route component={NotFound} />

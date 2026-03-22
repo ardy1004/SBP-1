@@ -4,10 +4,9 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Home, FileText, FileSignature, Users, BarChart3,
   Settings, LogOut, ChevronDown, ChevronRight, Menu, Bell,
-  Plus, ChevronLeft, Building2, User, X
+  Plus, ChevronLeft, Building2, User, X, FileSpreadsheet, Clock
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { mockSubmissions, mockLeads, mockContracts } from "../data/mockData";
 
 interface SubItem {
   label: string;
@@ -23,10 +22,6 @@ interface NavItem {
   subitems?: SubItem[];
 }
 
-const newSubmissions = mockSubmissions.filter(s => s.status === "new").length;
-const newLeads = mockLeads.filter(l => l.status === "new").length;
-const pendingContracts = mockContracts.filter(c => c.status === "pending_signature").length;
-
 const navItems: NavItem[] = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
   {
@@ -35,11 +30,13 @@ const navItems: NavItem[] = [
       { label: "Semua Properti", path: "/admin/properties" },
       { label: "Tambah Properti", path: "/admin/properties/add" },
       { label: "Properti Sold", path: "/admin/properties/sold" },
+      { label: "Import CSV", path: "/admin/import-csv" },
+      { label: "Import History", path: "/admin/import-history" },
     ]
   },
-  { icon: FileText, label: "Form Submission", path: "/admin/submissions", badge: newSubmissions || undefined },
-  { icon: FileSignature, label: "Perjanjian & Kontrak", path: "/admin/contracts", badge: pendingContracts || undefined },
-  { icon: Users, label: "Lead Management", path: "/admin/leads", badge: newLeads || undefined },
+  { icon: FileText, label: "Form Submission", path: "/admin/submissions" },
+  { icon: FileSignature, label: "Perjanjian & Kontrak", path: "/admin/contracts" },
+  { icon: Users, label: "Lead Management", path: "/admin/leads" },
   { icon: BarChart3, label: "Analytics", path: "/admin/analytics" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];

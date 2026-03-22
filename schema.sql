@@ -132,6 +132,22 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     FOREIGN KEY (admin_id) REFERENCES admins(id)
 );
 
+-- import_logs table (for CSV bulk upload feature)
+CREATE TABLE IF NOT EXISTS import_logs (
+    id TEXT PRIMARY KEY,
+    filename TEXT NOT NULL,
+    total_rows INTEGER NOT NULL,
+    success_count INTEGER DEFAULT 0,
+    failed_count INTEGER DEFAULT 0,
+    status TEXT DEFAULT 'processing',
+    error_log TEXT,
+    imported_ids TEXT,
+    rollback_available_until INTEGER,
+    created_by TEXT,
+    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    FOREIGN KEY (created_by) REFERENCES admins(id)
+);
+
 -- CREATE INDEXES FOR PERFORMANCE
 CREATE INDEX IF NOT EXISTS idx_properties_purpose ON properties(purpose);
 CREATE INDEX IF NOT EXISTS idx_properties_type ON properties(property_type);
@@ -142,3 +158,6 @@ CREATE INDEX IF NOT EXISTS idx_properties_slug ON properties(slug);
 CREATE INDEX IF NOT EXISTS idx_property_images_property ON property_images(property_id);
 CREATE INDEX IF NOT EXISTS idx_leads_status ON leads(status);
 CREATE INDEX IF NOT EXISTS idx_leads_property ON leads(property_id);
+CREATE INDEX IF NOT EXISTS idx_import_logs_created_by ON import_logs(created_by);
+CREATE INDEX IF NOT EXISTS idx_import_logs_status ON import_logs(status);
+CREATE INDEX IF NOT EXISTS idx_import_logs_created_at ON import_logs(created_at);
