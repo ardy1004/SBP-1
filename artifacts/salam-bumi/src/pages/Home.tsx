@@ -80,10 +80,12 @@ export default function Home() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const result = await propertiesApi.getAll({ limit: 50 });
-        if (result.success && result.data.length > 0) {
-          setProperties(result.data.map(apiPropertyToMock));
-        }
+      const result = await propertiesApi.getAll({ limit: 50 });
+      if (result.success) {
+        // Update terlepas dari apakah ada data atau tidak
+        // Jika data kosong, tampilkan array kosong (bukan mock data)
+        setProperties(result.data.length > 0 ? result.data.map(apiPropertyToMock) : []);
+      }
       } catch {
         // API tidak tersedia, gunakan mock data (sudah di-set default)
         console.info("Menggunakan mock data (API tidak tersedia)");

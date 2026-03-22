@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS properties (
     is_hot BOOLEAN DEFAULT 0,
     is_sold BOOLEAN DEFAULT 0,
     is_choice BOOLEAN DEFAULT 0,
+    status TEXT DEFAULT 'active',
     province TEXT,
     city TEXT,
     district TEXT,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS properties (
     ownership_status TEXT,
     bank_name TEXT,
     outstanding_amount INTEGER,
+    environmental_status TEXT DEFAULT 'Ya Jauh',
     distance_to_river INTEGER,
     distance_to_grave INTEGER,
     distance_to_powerline INTEGER,
@@ -45,8 +47,8 @@ CREATE TABLE IF NOT EXISTS properties (
     owner_whatsapp_2 TEXT,
     google_maps_url TEXT,
     video_url TEXT,
-    created_at INTEGER DEFAULT (strftime('%s', 'now')),
-    updated_at INTEGER DEFAULT (strftime('%s', 'now')),
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
     views_count INTEGER DEFAULT 0
 );
 
@@ -123,9 +125,10 @@ CREATE TABLE IF NOT EXISTS activity_logs (
     action TEXT NOT NULL,
     entity_type TEXT,
     entity_id TEXT,
+    detail TEXT,
     ip_address TEXT,
     user_agent TEXT,
-    created_at INTEGER DEFAULT (strftime('%s', 'now')),
+    created_at TEXT DEFAULT (datetime('now')),
     FOREIGN KEY (admin_id) REFERENCES admins(id)
 );
 

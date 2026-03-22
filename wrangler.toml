@@ -2,6 +2,10 @@ name = "salambumi-property"
 compatibility_date = "2024-01-01"
 pages_build_output_dir = "artifacts/salam-bumi/dist/public"
 
+# Environment Variables (for local development)
+[vars]
+JWT_SECRET = "sbp-dev-secret-key-change-in-production-min-32-chars"
+
 # D1 Database
 [[d1_databases]]
 binding = "DB"

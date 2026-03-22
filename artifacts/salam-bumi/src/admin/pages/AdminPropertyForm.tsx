@@ -1,12 +1,12 @@
 import { useState, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AdminLayout } from "../components/AdminLayout";
-import { mockProperties } from "@/data/properties";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { propertiesApi } from "@/lib/api-client";
 import {
   ChevronRight, Upload, X, GripVertical, Eye, Save, Send,
   ImagePlus, MapPin, ExternalLink, AlertCircle, CheckCircle2
@@ -88,67 +88,6 @@ function PriceInput({ value, onChange, placeholder }: { value: string; onChange:
         <Input type="number" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="pl-8" />
       </div>
       {preview && <div className="text-xs text-primary font-semibold">{preview}</div>}
-    </div>
-  );
-}
-
-function ImageUploadZone({ images, onChange }: { images: string[]; onChange: (imgs: string[]) => void }) {
-  const [dragging, setDragging] = useState(false);
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragging(false);
-    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
-    const urls = files.map(f => URL.createObjectURL(f));
-    if (images.length + urls.length > 20) {
-      alert("Maksimal 20 foto");
-      return;
-    }
-    onChange([...images, ...urls]);
-  }, [images, onChange]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const urls = files.map(f => URL.createObjectURL(f));
-    if (images.length + urls.length > 20) { alert("Maksimal 20 foto"); return; }
-    onChange([...images, ...urls]);
-  };
-
-  const removeImage = (idx: number) => onChange(images.filter((_, i) => i !== idx));
-
-  return (
-    <div className="space-y-4">
-      <div
-        onDrop={handleDrop}
-        onDragOver={e => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragging ? "border-primary bg-primary/5" : "border-gray-300 bg-gray-50 hover:border-primary/50"}`}
-      >
-        <ImagePlus className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-        <p className="font-semibold text-gray-700 mb-1">Drag & drop foto di sini</p>
-        <p className="text-sm text-gray-400 mb-3">atau klik untuk pilih file (JPG, PNG, WebP · max 5MB per foto · max 20 foto)</p>
-        <label className="cursor-pointer">
-          <span className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors inline-flex items-center gap-2">
-            <Upload className="w-4 h-4" /> Pilih Foto
-          </span>
-          <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-        </label>
-        <p className="text-xs text-gray-400 mt-2">{images.length}/20 foto</p>
-      </div>
-
-      {images.length > 0 && (
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-          {images.map((img, idx) => (
-            <div key={idx} className={`relative rounded-lg overflow-hidden aspect-square border-2 ${idx === 0 ? "border-primary" : "border-gray-100"}`}>
-              <img src={img} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
-              {idx === 0 && <span className="absolute top-1 left-1 bg-primary text-white text-xs font-bold px-1 py-0.5 rounded">Cover</span>}
-              <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -252,7 +191,9 @@ export default function AdminPropertyForm() {
   const [description, setDescription] = useState(existing?.description || "");
   const [facilities, setFacilities] = useState(existing?.facilities?.join(", ") || "");
   const [sellingReason, setSellingReason] = useState(existing?.selling_reason || "");
-  const [images, setImages] = useState<string[]>(existing?.images || []);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [dragging, setDragging] = useState(false);
   const [videoUrl, setVideoUrl] = useState(existing?.video_url || "");
 
   const [ownerName, setOwnerName] = useState("");
@@ -264,14 +205,151 @@ export default function AdminPropertyForm() {
     if (!isEdit) setSlug(slugify(v) + "-" + listingCode.toLowerCase());
   };
 
-  const handleSave = (mode: "draft" | "publish") => {
-    if (!title) { toast({ title: "Judul wajib diisi", variant: "destructive" }); return; }
-    toast({
-      title: mode === "draft" ? "Draft tersimpan!" : "Properti dipublish!",
-      description: mode === "draft" ? `"${title}" disimpan sebagai draft.` : `"${title}" berhasil dipublish ke website.`,
-    });
-    setLocation("/admin/properties");
-  };
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const files = Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"));
+    if (imageUrls.length + files.length > 20) {
+      alert("Maksimal 20 foto");
+      return;
+    }
+    
+    // Upload each file to R2 via API
+    for (const file of files) {
+      try {
+        const result = await propertiesApi.uploadImage(file);
+        if (result.success && result.url) {
+          setImageUrls(prev => [...prev, result.url]);
+        }
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        toast({ title: "Gagal mengupload gambar", variant: "destructive" });
+      }
+    }
+  }, [imageUrls, toast]);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (imageUrls.length + files.length > 20) { 
+      alert("Maksimal 20 foto"); 
+      return; 
+    }
+    
+    // Upload each file to R2 via API
+    for (const file of files) {
+      try {
+        const result = await propertiesApi.uploadImage(file);
+        if (result.success && result.url) {
+          setImageUrls(prev => [...prev, result.url]);
+        }
+      } catch (error) {
+        console.error("Error uploading image:", error);
+        toast({ title: "Gagal mengupload gambar", variant: "destructive" });
+      }
+    }
+  }, [imageUrls, toast]);
+
+  const removeImage = useCallback((idx: number) => {
+    setImageUrls(prev => prev.filter((_, i) => i !== idx));
+  }, []);
+
+   const handleSave = async (mode: "draft" | "publish") => {
+     if (!title) { 
+       toast({ title: "Judul wajib diisi", variant: "destructive" }); 
+       return; 
+     }
+
+     // Prepare the property data
+     const propertyData: any = {
+       title,
+       listing_code: listingCode,
+       slug: slug || `${slugify(title)}-${listingCode.toLowerCase()}`,
+       purpose,
+       property_type: propertyType,
+       price_offer: price ? parseInt(price, 10) : undefined,
+       price_rent: priceRent ? parseInt(priceRent, 10) : undefined,
+       old_price: oldPrice ? parseInt(oldPrice, 10) : undefined,
+       price_type: priceType.length > 0 ? priceType.join(",") : undefined,
+       province,
+       city,
+       district,
+       village,
+       address,
+       google_maps_url: googleMapsUrl,
+       land_area: landArea ? parseInt(landArea, 10) : undefined,
+       building_area: buildingArea ? parseInt(buildingArea, 10) : undefined,
+       front_width: frontWidth ? parseInt(frontWidth, 10) : undefined,
+       floors: floors ? parseInt(floors, 10) : undefined,
+       bedrooms: bedrooms ? parseInt(bedrooms, 10) : undefined,
+       bathrooms: bathrooms ? parseInt(bathrooms, 10) : undefined,
+       legal_status: legalStatus,
+       ownership_status: ownership,
+       bank_name: bankName || undefined,
+       outstanding_amount: outstanding ? parseInt(outstanding, 10) : undefined,
+       environmental_status: envStatus,
+       distance_to_river: distRiver ? parseInt(distRiver, 10) : undefined,
+       distance_to_grave: distGrave ? parseInt(distGrave, 10) : undefined,
+       distance_to_powerline: distPower ? parseInt(distPower, 10) : undefined,
+       road_width: roadWidth ? parseInt(roadWidth, 10) : undefined,
+       description,
+       facilities: facilities ? facilities : undefined,
+       selling_reason: sellingReason,
+       owner_name: ownerName,
+       owner_whatsapp_1: ownerWa1,
+       owner_whatsapp_2: ownerWa2,
+       is_premium: labels.includes("is_premium") ? 1 : 0,
+       is_featured: labels.includes("is_featured") ? 1 : 0,
+       is_hot: labels.includes("is_hot") ? 1 : 0,
+       is_choice: labels.includes("is_choice") ? 1 : 0,
+       is_sold: labels.includes("is_sold") ? 1 : 0,
+       status: mode === "publish" ? "active" : "draft",
+     };
+
+     // Remove undefined fields
+     Object.keys(propertyData).forEach(key => 
+       propertyData[key] === undefined && delete propertyData[key]
+     );
+
+     // Tambahkan images jika ada
+     if (imageUrls.length > 0) {
+       propertyData.images = imageUrls;
+     }
+
+     try {
+       const result = await propertiesApi.create(propertyData);
+       
+       // Simpan gambar ke property_images table jika ada
+       if (imageUrls.length > 0 && result.id) {
+         for (let i = 0; i < imageUrls.length; i++) {
+           try {
+             await fetch("/api/properties/save-image", {
+               method: "POST",
+               headers: {
+                 "Content-Type": "application/json",
+               },
+               body: JSON.stringify({
+                 property_id: result.id,
+                 image_url: imageUrls[i],
+                 is_primary: i === 0,
+                 sort_order: i,
+               }),
+             });
+           } catch (imgErr) {
+             console.error("Failed to save image:", imgErr);
+           }
+         }
+       }
+       
+       toast({
+         title: mode === "draft" ? "Draft tersimpan!" : "Properti dipublish!",
+         description: mode === "draft" ? `"${title}" disimpan sebagai draft.` : `"${title}" berhasil dipublish ke website.`,
+       });
+       setLocation("/admin/properties");
+     } catch (err) {
+       console.error("Failed to create property:", err);
+       toast({ title: "Gagal menyimpan properti", variant: "destructive" });
+     }
+   };
 
   const PROVINCES = ["DI. Yogyakarta", "Jawa Tengah", "Jawa Timur", "DKI Jakarta"];
   const CITIES: Record<string, string[]> = {
@@ -536,8 +614,40 @@ export default function AdminPropertyForm() {
 
         {/* 8. Upload Foto */}
         <SectionCard title="Upload Foto" step={8}>
-          <ImageUploadZone images={images} onChange={setImages} />
-          {images.length < 3 && (
+          <div className="space-y-4">
+            <div
+              onDrop={handleDrop}
+              onDragOver={e => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors ${dragging ? "border-primary bg-primary/5" : "border-gray-300 bg-gray-50 hover:border-primary/50"}`}
+            >
+              <ImagePlus className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <p className="font-semibold text-gray-700 mb-1">Drag & drop foto di sini</p>
+              <p className="text-sm text-gray-400 mb-3">atau klik untuk pilih file (JPG, PNG, WebP · max 5MB per foto · max 20 foto)</p>
+              <label className="cursor-pointer">
+                <span className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors inline-flex items-center gap-2">
+                  <Upload className="w-4 h-4" /> Pilih Foto
+                </span>
+                <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+              </label>
+              <p className="text-xs text-gray-400 mt-2">{imageUrls.length}/20 foto</p>
+            </div>
+
+            {imageUrls.length > 0 && (
+              <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                {imageUrls.map((img, idx) => (
+                  <div key={idx} className={`relative rounded-lg overflow-hidden aspect-square border-2 ${idx === 0 ? "border-primary" : "border-gray-100"}`}>
+                    <img src={img} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                    {idx === 0 && <span className="absolute top-1 left-1 bg-primary text-white text-xs font-bold px-1 py-0.5 rounded">Cover</span>}
+                    <button onClick={() => removeImage(idx)} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          {imageUrls.length < 3 && (
             <div className="flex items-center gap-2 text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg text-sm">
               <AlertCircle className="w-4 h-4 shrink-0" />
               Minimal 3 foto diperlukan untuk publish.
@@ -590,7 +700,7 @@ export default function AdminPropertyForm() {
               <Eye className="w-4 h-4" /> Preview
             </Button>
           </Link>
-          <Button onClick={() => handleSave("publish")} className="flex-1 gap-2 bg-primary hover:bg-primary/90" disabled={images.length < 3 || !title}>
+          <Button onClick={() => handleSave("publish")} className="flex-1 gap-2 bg-primary hover:bg-primary/90" disabled={imageUrls.length < 3 || !title}>
             <Send className="w-4 h-4" /> Publish
           </Button>
         </div>

@@ -166,11 +166,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (apiError: unknown) {
       // API error - cek apakah connection error atau auth error
       const errorMsg = apiError instanceof Error ? apiError.message : "";
-      if (errorMsg.includes("Failed to fetch") || errorMsg.includes("NetworkError")) {
-        // Backend tidak tersedia, fallback ke local auth
-        console.warn("API tidak tersedia, menggunakan local auth");
+      const errorStatus = (apiError as any)?.status;
+      
+      // Fallback ke local auth jika:
+      // 1. Connection error (Failed to fetch, NetworkError)
+      // 2. Server error (500, 502, 503)
+      // 3. Not Found (404) - endpoint tidak tersedia
+      if (
+        errorMsg.includes("Failed to fetch") || 
+        errorMsg.includes("NetworkError") ||
+        errorMsg.includes("HTTP 500") ||
+        errorMsg.includes("HTTP 502") ||
+        errorMsg.includes("HTTP 503") ||
+        errorMsg.includes("HTTP 404") ||
+        errorStatus === 500 ||
+        errorStatus === 502 ||
+        errorStatus === 503 ||
+        errorStatus === 404
+      ) {
+        // Backend tidak tersedia atau error, fallback ke local auth
+        console.warn("API tidak tersedia/error, menggunakan local auth");
       } else {
-        // Auth error dari API (wrong credentials, dll)
+        // Auth error dari API (401 - wrong credentials, dll)
         logActivity("Login Failed", `Percobaan login gagal: ${email}`);
         return false;
       }

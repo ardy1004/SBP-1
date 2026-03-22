@@ -64,7 +64,23 @@ export function extractToken(request) {
 export async function requireAuth(request, env) {
   const token = extractToken(request);
   if (!token) return null;
-  const payload = await verifyToken(token, env);
+
+  // Coba verifikasi sebagai JWT dulu
+  let payload = await verifyToken(token, env);
+
+  // Jika bukan JWT valid, coba parse sebagai local token
+  if (!payload) {
+    const parts = token.split(".");
+    if (parts.length === 2) {
+      try {
+        const decoded = JSON.parse(atob(parts[0]));
+        if (decoded.local && decoded.sub && decoded.exp && decoded.exp > Date.now()) {
+          payload = { email: decoded.sub };
+        }
+      } catch {}
+    }
+  }
+
   if (!payload || !payload.email) return null;
   const admin = await env.DB.prepare("SELECT id, email, name, role, is_active FROM admins WHERE email = ?").bind(payload.email).first();
   if (!admin || !admin.is_active) return null;

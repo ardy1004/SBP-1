@@ -406,7 +406,7 @@ export default function PropertyDetail() {
               </div>
 
               {/* Facilities */}
-              {property.facilities.length > 0 && (
+              {Array.isArray(property.facilities) && property.facilities.length > 0 && (
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                   <h2 className="text-xl font-bold text-gray-900 mb-6">Fasilitas</h2>
                   <div className="flex flex-wrap gap-3">

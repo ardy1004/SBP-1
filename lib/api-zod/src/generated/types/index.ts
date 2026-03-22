@@ -6,4 +6,21 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./createProperty201";
+export * from "./deleteProperty200";
+export * from "./getProperties200";
+export * from "./getProperties200Pagination";
+export * from "./getPropertiesIsSold";
+export * from "./getPropertiesParams";
+export * from "./getPropertyBySlug200";
 export * from "./healthStatus";
+export * from "./property";
+export * from "./propertyCreateInput";
+export * from "./propertyCreateInputPropertyType";
+export * from "./propertyCreateInputPurpose";
+export * from "./propertyUpdateInput";
+export * from "./propertyUpdateInputPropertyType";
+export * from "./propertyUpdateInputPurpose";
+export * from "./updateProperty200";
+export * from "./uploadPropertyImage200";
+export * from "./uploadPropertyImageBody";
