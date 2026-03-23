@@ -46,6 +46,9 @@ function Router() {
       {/* Public */}
       <Route path="/" component={Home} />
       <Route path="/properties" component={Properties} />
+      <Route path="/properti" component={Properties} />
+      <Route path="/properti/:param1" component={Properties} />
+      <Route path="/properti/:param1/:param2" component={Properties} />
       <Route path="/property/:slug" component={PropertyDetail} />
 
       {/* Admin */}

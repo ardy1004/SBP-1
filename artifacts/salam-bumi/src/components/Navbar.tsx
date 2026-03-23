@@ -13,18 +13,20 @@ import { useAuth } from "@/admin/context/AuthContext";
 const NAV_LINKS = [
   { href: "/", label: "Home", icon: Home },
   { 
-    href: "/properties", 
+    href: "/properti", 
     label: "Properties", 
     icon: Building,
     hasDropdown: true,
     dropdownItems: [
-      { href: "/properties?type=rumah", label: "Rumah" },
-      { href: "/properties?type=kost", label: "Kost" },
-      { href: "/properties?type=tanah", label: "Tanah" },
-      { href: "/properties?type=villa", label: "Villa" },
-      { href: "/properties?type=ruko", label: "Ruko" },
-      { href: "/properties?type=apartment", label: "Apartment" },
-      { href: "/properties", label: "Semua Properti" },
+      { href: "/properti/dijual/rumah", label: "Rumah Dijual" },
+      { href: "/properti/dijual/kost", label: "Kost Dijual" },
+      { href: "/properti/dijual/tanah", label: "Tanah Dijual" },
+      { href: "/properti/dijual/villa", label: "Villa Dijual" },
+      { href: "/properti/dijual/ruko", label: "Ruko Dijual" },
+      { href: "/properti/dijual/apartment", label: "Apartment Dijual" },
+      { href: "/properti/disewa/kost", label: "Kost Disewa" },
+      { href: "/properti/disewa/villa", label: "Villa Disewa" },
+      { href: "/properti", label: "Semua Properti" },
     ]
   },
   { href: "/portfolio", label: "Portofolio Gallery", icon: Image },
@@ -157,40 +159,59 @@ export function Navbar({ className }: NavbarProps) {
                     key={link.href} 
                     className="relative"
                     role="none"
-                    onMouseEnter={() => link.hasDropdown && setActiveDropdown(link.href)}
-                    onMouseLeave={() => link.hasDropdown && setActiveDropdown(null)}
                   >
-                    <Link
-                      href={link.href}
-                      role="menuitem"
-                      aria-haspopup={link.hasDropdown ? "true" : undefined}
-                      aria-expanded={link.hasDropdown ? activeDropdown === link.href : undefined}
-                      aria-current={isActive(link.href) ? "page" : undefined}
-                      className={cn(
-                        "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative group",
-                        isActive(link.href)
-                          ? "text-primary font-semibold bg-primary/5"
-                          : "text-gray-600 hover:text-primary hover:bg-gray-50"
-                      )}
-                    >
-                      <link.icon className="w-4 h-4 transition-transform group-hover:scale-110" />
-                      {link.label}
-                      {link.badge && (
-                        <span className="text-[10px] bg-secondary text-primary px-2 py-0.5 rounded-full font-semibold animate-pulse">
-                          {link.badge}
-                        </span>
-                      )}
-                      {link.hasDropdown && (
+                    {link.hasDropdown ? (
+                      <button
+                        onClick={() => setActiveDropdown(activeDropdown === link.href ? null : link.href)}
+                        role="menuitem"
+                        aria-haspopup="true"
+                        aria-expanded={activeDropdown === link.href}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative group",
+                          isActive(link.href)
+                            ? "text-primary font-semibold bg-primary/5"
+                            : "text-gray-600 hover:text-primary hover:bg-gray-50"
+                        )}
+                      >
+                        <link.icon className="w-4 h-4 transition-transform group-hover:scale-110" />
+                        {link.label}
+                        {link.badge && (
+                          <span className="text-[10px] bg-secondary text-primary px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                            {link.badge}
+                          </span>
+                        )}
                         <ChevronDown className={cn(
                           "w-4 h-4 transition-transform duration-300",
                           activeDropdown === link.href && "rotate-180"
                         )} />
-                      )}
-                      {/* Active indicator underline */}
-                      {isActive(link.href) && (
-                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-secondary rounded-full" />
-                      )}
-                    </Link>
+                        {isActive(link.href) && (
+                          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-secondary rounded-full" />
+                        )}
+                      </button>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        role="menuitem"
+                        aria-current={isActive(link.href) ? "page" : undefined}
+                        className={cn(
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg relative group",
+                          isActive(link.href)
+                            ? "text-primary font-semibold bg-primary/5"
+                            : "text-gray-600 hover:text-primary hover:bg-gray-50"
+                        )}
+                      >
+                        <link.icon className="w-4 h-4 transition-transform group-hover:scale-110" />
+                        {link.label}
+                        {link.badge && (
+                          <span className="text-[10px] bg-secondary text-primary px-2 py-0.5 rounded-full font-semibold animate-pulse">
+                            {link.badge}
+                          </span>
+                        )}
+                        {isActive(link.href) && (
+                          <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-secondary rounded-full" />
+                        )}
+                      </Link>
+                    )}
 
                     {/* Properties Dropdown */}
                     {link.hasDropdown && link.dropdownItems && activeDropdown === link.href && (
@@ -203,6 +224,7 @@ export function Navbar({ className }: NavbarProps) {
                           <Link
                             key={item.href}
                             href={item.href}
+                            onClick={() => setActiveDropdown(null)}
                             role="menuitem"
                             className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
                           >

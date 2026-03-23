@@ -90,12 +90,34 @@ export default function Properties() {
   const [selectedPurpose, setSelectedPurpose] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
 
-  // Get type from URL query
+  // Get type and purpose from URL path
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const typeParam = params.get("type");
-    if (typeParam) {
-      setSelectedType(typeParam.toLowerCase());
+    // Parse URL: /properti/{purpose}/{type}
+    // Examples:
+    // /properti → show all
+    // /properti/rumah → show all rumah
+    // /properti/dijual → show all dijual
+    // /properti/dijual/rumah → show rumah dijual
+    
+    const path = window.location.pathname;
+    const parts = path.split('/').filter(p => p);
+    
+    // Remove 'properti' from parts
+    const params = parts.slice(1); // Skip 'properti'
+    
+    if (params.length === 1) {
+      // /properti/rumah or /properti/dijual
+      const param = params[0].toLowerCase();
+      const purposes = ['dijual', 'disewa'];
+      if (purposes.includes(param)) {
+        setSelectedPurpose(param === 'dijual' ? 'Dijual' : 'Disewa');
+      } else {
+        setSelectedType(param);
+      }
+    } else if (params.length === 2) {
+      // /properti/dijual/rumah
+      setSelectedPurpose(params[0].toLowerCase() === 'dijual' ? 'Dijual' : 'Disewa');
+      setSelectedType(params[1].toLowerCase());
     }
   }, [location]);
 
