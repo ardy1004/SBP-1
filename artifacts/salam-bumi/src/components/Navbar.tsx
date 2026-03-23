@@ -24,8 +24,12 @@ const NAV_LINKS = [
       { href: "/properti/dijual/villa", label: "Villa Dijual" },
       { href: "/properti/dijual/ruko", label: "Ruko Dijual" },
       { href: "/properti/dijual/apartment", label: "Apartment Dijual" },
+      { href: "/properti/dijual/hotel", label: "Hotel Dijual" },
+      { href: "/properti/dijual/homestay", label: "Homestay Dijual" },
+      { href: "/properti/dijual/gudang", label: "Gudang Dijual" },
       { href: "/properti/disewa/kost", label: "Kost Disewa" },
       { href: "/properti/disewa/villa", label: "Villa Disewa" },
+      { href: "/properti/disewa/hotel", label: "Hotel Disewa" },
       { href: "/properti", label: "Semua Properti" },
     ]
   },

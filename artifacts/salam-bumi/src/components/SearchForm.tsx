@@ -100,6 +100,7 @@ export function SearchForm() {
             <option value="apartment">Apartment</option>
             <option value="hotel">Hotel</option>
             <option value="homestay">Homestay</option>
+            <option value="gudang">Gudang</option>
           </select>
         </div>
 

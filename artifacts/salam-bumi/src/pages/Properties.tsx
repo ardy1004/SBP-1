@@ -16,6 +16,9 @@ const PROPERTY_TYPES = [
   { value: "villa", label: "Villa", icon: Palmtree },
   { value: "ruko", label: "Ruko", icon: Store },
   { value: "apartment", label: "Apartment", icon: Building },
+  { value: "hotel", label: "Hotel", icon: Building },
+  { value: "homestay", label: "Homestay", icon: Home },
+  { value: "gudang", label: "Gudang", icon: Store },
 ];
 
 const PURPOSE_OPTIONS = [
