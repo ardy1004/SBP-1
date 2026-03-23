@@ -30,7 +30,8 @@ function apiPropertyToProperty(api: any): Property {
     listing_code: api.listing_code || "",
     title: api.title || "Properti",
     slug: api.slug || "",
-    price: api.price_offer || api.price_rent || 0,
+    // Gunakan field 'price' jika ada, atau fallback ke price_offer/price_rent
+    price: api.price || api.price_offer || api.price_rent || 0,
     old_price: api.old_price,
     purpose: api.purpose || "Dijual",
     type: api.property_type || "Rumah",

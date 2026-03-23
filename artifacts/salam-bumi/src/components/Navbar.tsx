@@ -193,36 +193,23 @@ export function Navbar({ className }: NavbarProps) {
                     </Link>
 
                     {/* Properties Dropdown */}
-                    {link.hasDropdown && link.dropdownItems && (
+                    {link.hasDropdown && link.dropdownItems && activeDropdown === link.href && (
                       <div
-                        className={cn(
-                          "absolute top-full left-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 ease-out transform origin-top",
-                          activeDropdown === link.href
-                            ? "opacity-100 visible scale-100 translate-y-0"
-                            : "opacity-0 invisible scale-95 -translate-y-2"
-                        )}
+                        className="absolute top-full left-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 z-50"
                         role="menu"
                         aria-label="Properties submenu"
                       >
-                        <div className="py-2">
-                          {link.dropdownItems.map((item, index) => (
-                            <Link
-                              key={item.href}
-                              href={item.href}
-                              role="menuitem"
-                              className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:text-primary hover:bg-primary/5 transition-all duration-200"
-                              style={{ 
-                                animationDelay: `${index * 50}ms`,
-                                opacity: activeDropdown === link.href ? 1 : 0,
-                                transform: activeDropdown === link.href ? 'translateX(0)' : 'translateX(-10px)',
-                                transition: `all 0.2s ease ${index * 30}ms`
-                              }}
-                            >
-                              <ChevronDown className="w-3 h-3 -rotate-90 text-gray-400" />
-                              {item.label}
-                            </Link>
-                          ))}
-                        </div>
+                        {link.dropdownItems.map((item) => (
+                          <Link
+                            key={item.href}
+                            href={item.href}
+                            role="menuitem"
+                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-600 hover:text-primary hover:bg-primary/5 transition-colors"
+                          >
+                            <ChevronDown className="w-3 h-3 -rotate-90 text-gray-400" />
+                            {item.label}
+                          </Link>
+                        ))}
                       </div>
                     )}
                   </li>
