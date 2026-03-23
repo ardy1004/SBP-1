@@ -70,15 +70,6 @@ export function PropertyCard({ property }: PropertyCardProps) {
         )}
       </div>
 
-      {/* SOLD Overlay */}
-      {property.badges.is_sold && (
-        <div className="absolute inset-0 z-30 pointer-events-none overflow-hidden">
-          <div className="absolute bg-accent/90 text-white font-extrabold text-2xl py-3 w-[150%] text-center transform -rotate-45 -translate-x-[20%] translate-y-[80%] shadow-2xl backdrop-blur-sm border-y-4 border-white/20">
-            TERJUAL
-          </div>
-        </div>
-      )}
-
       {/* Image Gallery */}
       <Link href={`/property/${property.slug}`} className="block relative aspect-[4/3] overflow-hidden bg-gray-100">
         <img 
@@ -87,6 +78,21 @@ export function PropertyCard({ property }: PropertyCardProps) {
           loading="lazy"
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
+        
+        {/* SOLD Overlay - Inside Image Container */}
+        {property.badges.is_sold && (
+          <div className="absolute inset-0 z-10 pointer-events-none">
+            {/* Red overlay with 30% opacity */}
+            <div className="absolute inset-0 bg-red-500/30" />
+            
+            {/* SOLD text with background */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="bg-red-500/90 text-white font-bold text-2xl sm:text-3xl md:text-4xl px-6 py-3 sm:px-8 sm:py-4 rounded-lg shadow-2xl border-4 border-white">
+                TERJUAL
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Navigation Arrows (Show on hover if multiple imgs) */}
         {property.images.length > 1 && isHovered && (
