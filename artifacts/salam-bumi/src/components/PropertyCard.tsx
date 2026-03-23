@@ -79,11 +79,17 @@ export function PropertyCard({ property }: PropertyCardProps) {
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         
-        {/* SOLD Overlay - Pita Diagonal */}
+        {/* SOLD Ribbon Overlay */}
         {property.badges.is_sold && (
-          <div className="absolute top-4 -right-8 z-10 pointer-events-none">
-            <div className="bg-red-500 text-white font-bold text-[10px] px-10 py-1 transform rotate-45 shadow-md">
-              TERJUAL
+          <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+            {/* Red overlay on entire image (20% opacity) */}
+            <div className="absolute inset-0 bg-red-500/20" />
+            
+            {/* Diagonal Ribbon from bottom-left to top-right */}
+            <div className="absolute bottom-0 left-0 w-full h-full flex items-center justify-center">
+              <div className="absolute bg-gradient-to-r from-red-600 to-red-500 text-white font-extrabold text-xl sm:text-2xl md:text-3xl px-12 sm:px-16 md:px-20 py-2 sm:py-3 border-[3px] border-white shadow-2xl transform -rotate-45 tracking-widest whitespace-nowrap">
+                S O L D
+              </div>
             </div>
           </div>
         )}
