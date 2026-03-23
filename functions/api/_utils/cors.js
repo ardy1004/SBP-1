@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS = [
   "https://salambumi.xyz",
   "https://www.salambumi.xyz",
+  "https://salambumi-property.pages.dev",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:3000",
@@ -9,8 +10,11 @@ const ALLOWED_ORIGINS = [
 export function getCorsHeaders(request) {
   const origin = request.headers.get("Origin") || "";
   const isAllowed = ALLOWED_ORIGINS.includes(origin) || origin.startsWith("http://localhost:");
+  
+  // Untuk production, jangan gunakan wildcard
+  // Hanya izinkan origin yang terdaftar
   return {
-    "Access-Control-Allow-Origin": isAllowed ? origin : "*",
+    "Access-Control-Allow-Origin": isAllowed ? origin : "https://salambumi-property.pages.dev",
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Allow-Credentials": "true",

@@ -1,6 +1,15 @@
 function getJwtSecret(env) {
-  const secret = env.JWT_SECRET || "sbp-default-secret-change-in-production-min-32-chars";
-  return new TextEncoder().encode(secret);
+  // Di production, JWT_SECRET wajib ada
+  if (!env.JWT_SECRET) {
+    // Untuk development, gunakan fallback
+    if (env.NODE_ENV !== "production") {
+      console.warn("[JWT] Using development secret - NOT for production!");
+      return new TextEncoder().encode("sbp-dev-secret-key-change-in-production-min-32-chars");
+    }
+    // Untuk production, throw error
+    throw new Error("JWT_SECRET environment variable is required in production");
+  }
+  return new TextEncoder().encode(env.JWT_SECRET);
 }
 
 async function importKey(secret) {
