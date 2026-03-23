@@ -88,36 +88,52 @@ export default function Properties() {
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPurpose, setSelectedPurpose] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
 
-  // Get type and purpose from URL path
+  // Get filters from URL path AND query parameters
   useEffect(() => {
-    // Parse URL: /properti/{purpose}/{type}
-    // Examples:
-    // /properti → show all
-    // /properti/rumah → show all rumah
-    // /properti/dijual → show all dijual
-    // /properti/dijual/rumah → show rumah dijual
-    
+    // Parse URL path: /properti/{purpose}/{type}
     const path = window.location.pathname;
     const parts = path.split('/').filter(p => p);
+    const pathParams = parts.slice(1); // Skip 'properti'
     
-    // Remove 'properti' from parts
-    const params = parts.slice(1); // Skip 'properti'
+    // Parse query parameters: /properti?purpose=dijual&type=kost&city=Sleman
+    const searchParams = new URLSearchParams(window.location.search);
     
-    if (params.length === 1) {
-      // /properti/rumah or /properti/dijual
-      const param = params[0].toLowerCase();
+    // Priority: Query params > Path params
+    
+    // Handle purpose
+    const queryPurpose = searchParams.get("purpose");
+    if (queryPurpose) {
+      const purposeMap: Record<string, string> = {
+        "dijual": "Dijual",
+        "disewa": "Disewa",
+        "semua": ""
+      };
+      setSelectedPurpose(purposeMap[queryPurpose.toLowerCase()] || "");
+    } else if (pathParams.length >= 1) {
+      const param = pathParams[0].toLowerCase();
       const purposes = ['dijual', 'disewa'];
       if (purposes.includes(param)) {
         setSelectedPurpose(param === 'dijual' ? 'Dijual' : 'Disewa');
       } else {
         setSelectedType(param);
       }
-    } else if (params.length === 2) {
-      // /properti/dijual/rumah
-      setSelectedPurpose(params[0].toLowerCase() === 'dijual' ? 'Dijual' : 'Disewa');
-      setSelectedType(params[1].toLowerCase());
+    }
+    
+    // Handle type from query params
+    const queryType = searchParams.get("type");
+    if (queryType) {
+      setSelectedType(queryType.toLowerCase());
+    } else if (pathParams.length === 2) {
+      setSelectedType(pathParams[1].toLowerCase());
+    }
+    
+    // Handle city from query params
+    const queryCity = searchParams.get("city");
+    if (queryCity) {
+      setSelectedCity(queryCity);
     }
   }, [location]);
 
@@ -156,7 +172,11 @@ export default function Properties() {
     const matchPurpose =
       !selectedPurpose || p.purpose === selectedPurpose;
 
-    return matchSearch && matchType && matchPurpose && !p.badges.is_sold;
+    const matchCity =
+      !selectedCity ||
+      p.city.toLowerCase().includes(selectedCity.toLowerCase());
+
+    return matchSearch && matchType && matchPurpose && matchCity && !p.badges.is_sold;
   });
 
   const displayedProperties = filtered.slice(0, visibleCount);
