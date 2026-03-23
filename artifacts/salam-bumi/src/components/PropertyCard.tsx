@@ -79,17 +79,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         
-        {/* SOLD Overlay - Inside Image Container */}
+        {/* SOLD Overlay - Diagonal Ribbon */}
         {property.badges.is_sold && (
-          <div className="absolute inset-0 z-10 pointer-events-none">
-            {/* Red overlay with 30% opacity */}
-            <div className="absolute inset-0 bg-red-500/30" />
-            
-            {/* SOLD text with background */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-red-500/90 text-white font-bold text-2xl sm:text-3xl md:text-4xl px-6 py-3 sm:px-8 sm:py-4 rounded-lg shadow-2xl border-4 border-white">
-                TERJUAL
-              </div>
+          <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+            <div className="absolute bg-red-500/90 text-white font-extrabold text-sm py-1 w-[150%] text-center transform -rotate-45 -translate-x-[20%] translate-y-[80%] shadow-2xl backdrop-blur-sm border-y-2 border-white/30">
+              TERJUAL
             </div>
           </div>
         )}
