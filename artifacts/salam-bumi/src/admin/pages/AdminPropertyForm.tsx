@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AdminLayout } from "../components/AdminLayout";
+import { SlugPreview } from "@/components/admin/SlugPreview";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -402,9 +403,14 @@ export default function AdminPropertyForm() {
             />
             <div className="text-xs text-right text-gray-400 mt-0.5">{title.length}/100</div>
           </FieldGroup>
-          <FieldGroup label="URL Slug" required note={`Preview: salambumi.xyz/properti/${slug || "..."}`}>
-            <Input value={slug} onChange={e => setSlug(e.target.value)} placeholder="rumah-mewah-2-lantai-sleman-dekat-ugm" />
-          </FieldGroup>
+          <SlugPreview
+            title={title}
+            propertyType={propertyType}
+            location={district || city || ""}
+            listingCode={listingCode}
+            value={slug}
+            onChange={setSlug}
+          />
         </SectionCard>
 
         {/* 2. Harga & Label */}

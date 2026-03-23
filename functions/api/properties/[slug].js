@@ -17,9 +17,30 @@ export async function onRequestGet(context) {
   try {
     const { slug } = params;
 
-    const property = await env.DB.prepare(
+    let property = await env.DB.prepare(
       `SELECT p.* FROM properties p WHERE p.slug = ?`
     ).bind(slug).first();
+
+    // Jika tidak ditemukan, cek slug_redirects untuk 301 redirect
+    if (!property && env.DB) {
+      const redirect = await env.DB.prepare(
+        `SELECT new_slug FROM slug_redirects WHERE old_slug = ?`
+      ).bind(slug).first();
+      
+      if (redirect && redirect.new_slug) {
+        // Return 301 redirect ke slug baru
+        const newUrl = new URL(request.url);
+        newUrl.pathname = `/api/properties/${redirect.new_slug}`;
+        
+        return new Response(null, {
+          status: 301,
+          headers: {
+            "Location": newUrl.toString(),
+            "Cache-Control": "public, max-age=31536000" // Cache 1 tahun
+          }
+        });
+      }
+    }
 
     if (!property) {
       return errorResponse("Properti tidak ditemukan", 404, request);
