@@ -80,7 +80,8 @@ export default function Home() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-      const result = await propertiesApi.getAll({ limit: 50 });
+      // Fetch semua properti (tanpa limit)
+      const result = await propertiesApi.getAll({ limit: 1000 });
       if (result.success) {
         // Update terlepas dari apakah ada data atau tidak
         // Jika data kosong, tampilkan array kosong (bukan mock data)

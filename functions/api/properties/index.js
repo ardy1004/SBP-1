@@ -16,7 +16,8 @@ export async function onRequestGet(context) {
   try {
     const url = new URL(request.url);
     const page = Math.max(1, parseInt(url.searchParams.get("page") || "1"));
-    const limit = Math.min(50, Math.max(1, parseInt(url.searchParams.get("limit") || "20")));
+    // Tingkatkan limit maksimal ke 1000 untuk homepage
+    const limit = Math.min(1000, Math.max(1, parseInt(url.searchParams.get("limit") || "20")));
     const offset = (page - 1) * limit;
 
     // Filter params

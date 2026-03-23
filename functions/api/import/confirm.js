@@ -130,10 +130,12 @@ export async function onRequestPost(context) {
     }
 
     // Decode validation data
+    // Gunakan decodeURIComponent untuk handle karakter non-Latin1
     let validationResult;
     try {
-      validationResult = JSON.parse(atob(validation_data));
+      validationResult = JSON.parse(decodeURIComponent(atob(validation_data)));
     } catch (e) {
+      console.error("Decode error:", e.message);
       return errorResponse("validation_data tidak valid", 400, request);
     }
 

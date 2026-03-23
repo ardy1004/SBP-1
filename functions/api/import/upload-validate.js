@@ -9,17 +9,10 @@
 import { jsonResponse, errorResponse, handleCors } from "../_utils/cors.js";
 import { requireAuth } from "../_utils/jwt.js";
 
-// Required fields yang wajib diisi
+// Required fields yang wajib diisi (hanya listing_code dan title yang wajib)
 const REQUIRED_FIELDS = [
   "listing_code",
-  "title",
-  "slug",
-  "purpose",
-  "property_type",
-  "province",
-  "city",
-  "district",
-  "address"
+  "title"
 ];
 
 // Allowed values untuk validasi
@@ -37,7 +30,8 @@ const ALLOWED_LEGAL_STATUSES = [
 const ALLOWED_OWNERSHIP_STATUS = ["On Hand", "On Bank", ""];
 
 // Parse CSV line dengan handle quotes
-function parseCSVLine(line) {
+// Mendukung delimiter: koma (,) dan tab (\t)
+function parseCSVLine(line, delimiter = ",") {
   const result = [];
   let current = "";
   let inQuotes = false;
@@ -52,7 +46,7 @@ function parseCSVLine(line) {
       } else {
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === delimiter && !inQuotes) {
       result.push(current.trim());
       current = "";
     } else {
@@ -64,6 +58,39 @@ function parseCSVLine(line) {
   return result;
 }
 
+// Deteksi delimiter yang digunakan (koma atau tab)
+function detectDelimiter(headerLine, totalHeaders) {
+  // Jika total headers > 45, kemungkinan besar menggunakan tab
+  // karena CSV dengan 52 kolom + koma akan sangat panjang
+  if (totalHeaders > 45) {
+    console.log("[UPLOAD] Auto-detect: Using TAB delimiter (many columns)");
+    return "\t";
+  }
+  
+  // Hitung tab di luar quotes
+  let tabCount = 0;
+  let commaCount = 0;
+  let inQuotes = false;
+  
+  for (let i = 0; i < headerLine.length; i++) {
+    const char = headerLine[i];
+    if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (!inQuotes) {
+      if (char === '\t') tabCount++;
+      if (char === ',') commaCount++;
+    }
+  }
+  
+  console.log("[UPLOAD] Tab count:", tabCount, "Comma count:", commaCount);
+  
+  // Jika tab lebih banyak atau sama dengan koma, gunakan tab
+  if (tabCount >= commaCount) {
+    return "\t";
+  }
+  return ",";
+}
+
 // Validasi satu baris data
 function validateRow(row, headers, rowIndex, existingCodes, existingSlugs) {
   const errors = [];
@@ -73,6 +100,12 @@ function validateRow(row, headers, rowIndex, existingCodes, existingSlugs) {
   headers.forEach((header, index) => {
     data[header] = row[index] || "";
   });
+  
+  // Skip baris yang benar-benar kosong (tidak ada data sama sekali)
+  const hasAnyData = Object.values(data).some(val => val && val.trim() !== "");
+  if (!hasAnyData) {
+    return { errors: [], data: null }; // Return null untuk skip baris ini
+  }
   
   // Validasi required fields
   for (const field of REQUIRED_FIELDS) {
@@ -110,24 +143,32 @@ function validateRow(row, headers, rowIndex, existingCodes, existingSlugs) {
     }
   }
   
-  // Validasi purpose
-  if (data.purpose && !ALLOWED_PURPOSES.includes(data.purpose)) {
-    errors.push({
-      row: rowIndex,
-      field: "purpose",
-      value: data.purpose,
-      error: `purpose harus: ${ALLOWED_PURPOSES.join(", ")}`
-    });
+  // Validasi purpose - LEBIH FLEKSIBEL
+  if (data.purpose) {
+    const purposeValue = data.purpose.trim().toLowerCase();
+    const allowedPurposesLower = ALLOWED_PURPOSES.map(p => p.toLowerCase());
+    if (!allowedPurposesLower.includes(purposeValue) && purposeValue !== "") {
+      errors.push({
+        row: rowIndex,
+        field: "purpose",
+        value: data.purpose,
+        error: `purpose harus: ${ALLOWED_PURPOSES.join(", ")}`
+      });
+    }
   }
   
-  // Validasi property_type
-  if (data.property_type && !ALLOWED_PROPERTY_TYPES.includes(data.property_type)) {
-    errors.push({
-      row: rowIndex,
-      field: "property_type",
-      value: data.property_type,
-      error: `property_type harus: ${ALLOWED_PROPERTY_TYPES.join(", ")}`
-    });
+  // Validasi property_type - LEBIH FLEKSIBEL
+  if (data.property_type) {
+    const typeValue = data.property_type.trim().toLowerCase();
+    const allowedTypesLower = ALLOWED_PROPERTY_TYPES.map(t => t.toLowerCase());
+    if (!allowedTypesLower.includes(typeValue) && typeValue !== "") {
+      errors.push({
+        row: rowIndex,
+        field: "property_type",
+        value: data.property_type,
+        error: `property_type harus: ${ALLOWED_PROPERTY_TYPES.join(", ")}`
+      });
+    }
   }
   
   // Validasi price_offer jika purpose mengandung "Dijual"
@@ -198,16 +239,21 @@ function validateRow(row, headers, rowIndex, existingCodes, existingSlugs) {
     }
   }
   
-  // Validasi boolean fields
+  // Validasi boolean fields - LEBIH FLEKSIBEL
   const booleanFields = ["is_premium", "is_featured", "is_hot", "is_choice"];
   for (const field of booleanFields) {
-    if (data[field] && !["TRUE", "FALSE", ""].includes(data[field.toUpperCase()]) && !["true", "false", ""].includes(data[field.toLowerCase()])) {
-      errors.push({
-        row: rowIndex,
-        field,
-        value: data[field],
-        error: `${field} harus TRUE atau FALSE`
-      });
+    if (data[field]) {
+      const value = data[field].toString().toUpperCase().trim();
+      // Terima: TRUE, FALSE, 1, 0, YA, TIDAK, YES, NO, kosong
+      const validValues = ["TRUE", "FALSE", "1", "0", "YA", "TIDAK", "YES", "NO", ""];
+      if (!validValues.includes(value)) {
+        errors.push({
+          row: rowIndex,
+          field,
+          value: data[field],
+          error: `${field} harus TRUE/FALSE/1/0/YA/TIDAK`
+        });
+      }
     }
   }
   
@@ -277,34 +323,84 @@ export async function onRequestPost(context) {
     }
 
     // Validasi tipe file
-    if (!file.name.endsWith(".csv")) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
       return errorResponse("Format file tidak valid. Hanya CSV yang diterima.", 400, request);
     }
 
     // Baca file content
-    const content = await file.text();
+    let content = await file.text();
     
-    // Parse CSV
-    const lines = content.split("\n").filter(line => line.trim() !== "");
+    // Remove BOM jika ada
+    if (content.charCodeAt(0) === 0xFEFF) {
+      content = content.slice(1);
+    }
+    
+    // Handle multi-line quoted fields
+    // Gabungkan baris yang berada di dalam quotes
+    let inQuotes = false;
+    let processedContent = "";
+    for (let i = 0; i < content.length; i++) {
+      const char = content[i];
+      if (char === '"') {
+        inQuotes = !inQuotes;
+        processedContent += char;
+      } else if ((char === '\n' || char === '\r') && inQuotes) {
+        // Replace newline dengan spasi di dalam quotes
+        processedContent += ' ';
+      } else {
+        processedContent += char;
+      }
+    }
+    
+    // Parse CSV - handle berbagai format line break (CRLF, LF, CR)
+    const lines = processedContent
+      .replace(/\r\n/g, "\n")  // CRLF -> LF
+      .replace(/\r/g, "\n")    // CR -> LF
+      .split("\n")
+      .filter(line => line.trim() !== "");
+    
+    console.log("[UPLOAD] Total lines:", lines.length);
     
     if (lines.length < 2) {
       return errorResponse("File CSV kosong atau tidak ada data.", 400, request);
     }
 
-    // Parse header
-    const headers = parseCSVLine(lines[0]);
+    // Parse header - GUNAKAN KOMA SEBAGAI DELIMITER DEFAULT
+    // CSV standard menggunakan koma sebagai delimiter
+    const delimiter = ",";
+    const headers = parseCSVLine(lines[0], delimiter);
+    console.log("[UPLOAD] Total headers:", headers.length);
+    console.log("[UPLOAD] Using delimiter: COMMA");
+    console.log("[UPLOAD] Raw header line (first 200 chars):", lines[0].substring(0, 200));
+    console.log("[UPLOAD] First 10 headers:", headers.slice(0, 10));
+    
+    // Check if headers contain expected columns
+    const hasListingCode = headers.some(h => h.toLowerCase().includes("listing"));
+    const hasTitle = headers.some(h => h.toLowerCase().includes("title"));
+    
+    if (!hasListingCode || !hasTitle) {
+      return errorResponse(`Format CSV tidak valid. Header harus mengandung 'listing_code' dan 'title'. Ditemukan: ${headers.slice(0, 5).join(", ")}...`, 400, request);
+    }
     
     // Get existing listing_codes dan slugs untuk cek duplikat
-    const existingProperties = await env.DB.prepare(
-      "SELECT listing_code, slug FROM properties"
-    ).all();
+    let existingCodes = new Set();
+    let existingSlugs = new Set();
     
-    const existingCodes = new Set(
-      (existingProperties.results || []).map(p => p.listing_code.toLowerCase())
-    );
-    const existingSlugs = new Set(
-      (existingProperties.results || []).map(p => p.slug.toLowerCase())
-    );
+    try {
+      const existingProperties = await env.DB.prepare(
+        "SELECT listing_code, slug FROM properties"
+      ).all();
+      
+      if (existingProperties && existingProperties.results) {
+        existingProperties.results.forEach(p => {
+          if (p.listing_code) existingCodes.add(p.listing_code.toLowerCase());
+          if (p.slug) existingSlugs.add(p.slug.toLowerCase());
+        });
+      }
+    } catch (dbErr) {
+      console.log("[UPLOAD] Error fetching existing properties:", dbErr.message);
+      // Continue without duplicate check if DB query fails
+    }
 
     // Validasi semua baris
     const allErrors = [];
@@ -312,8 +408,20 @@ export async function onRequestPost(context) {
     const preview = [];
 
     for (let i = 1; i < lines.length; i++) {
-      const row = parseCSVLine(lines[i]);
+      const row = parseCSVLine(lines[i], delimiter);
+      
+      // Debug: log first 3 rows
+      if (i <= 3) {
+        console.log(`[UPLOAD] Row ${i} columns:`, row.length);
+        console.log(`[UPLOAD] Row ${i} values (first 10):`, row.slice(0, 10));
+      }
+      
       const { errors, data } = validateRow(row, headers, i + 1, existingCodes, existingSlugs);
+      
+      // Skip baris kosong (data null)
+      if (data === null) {
+        continue;
+      }
       
       if (errors.length > 0) {
         allErrors.push(...errors);
@@ -360,7 +468,9 @@ export async function onRequestPost(context) {
     
     // Simpan ke environment variable (atau KV jika ada)
     // Untuk sementara, kita encode dalam response dan frontend akan simpan
-    const encodedResult = btoa(JSON.stringify(validationResult));
+    // Gunakan encodeURIComponent untuk handle karakter non-Latin1
+    const jsonString = JSON.stringify(validationResult);
+    const encodedResult = btoa(encodeURIComponent(jsonString));
 
     return jsonResponse({
       success: true,
@@ -374,7 +484,7 @@ export async function onRequestPost(context) {
     }, 200, request);
 
   } catch (error) {
-    console.error("Upload validate error:", error);
-    return errorResponse("Gagal memvalidasi file CSV", 500, request);
+    console.error("Upload validate error:", error.message, error.stack);
+    return errorResponse(`Gagal memvalidasi file CSV: ${error.message}`, 500, request);
   }
 }
