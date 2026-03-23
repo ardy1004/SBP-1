@@ -101,6 +101,7 @@ export function SearchForm() {
             <option value="hotel">Hotel</option>
             <option value="homestay">Homestay</option>
             <option value="gudang">Gudang</option>
+            <option value="komersial">Komersial Lainnya</option>
           </select>
         </div>
 
@@ -116,8 +117,13 @@ export function SearchForm() {
             <option value="0-1000000000">Dibawah 1M</option>
             <option value="1000000000-2000000000">1M - 2M</option>
             <option value="2000000000-3000000000">2M - 3M</option>
-            <option value="3000000000-5000000000">3M - 5M</option>
-            <option value="5000000000-10000000000">5M - 10M</option>
+            <option value="3000000000-4000000000">3M - 4M</option>
+            <option value="4000000000-5000000000">4M - 5M</option>
+            <option value="5000000000-6000000000">5M - 6M</option>
+            <option value="6000000000-7000000000">6M - 7M</option>
+            <option value="7000000000-8000000000">7M - 8M</option>
+            <option value="8000000000-9000000000">8M - 9M</option>
+            <option value="9000000000-10000000000">9M - 10M</option>
             <option value="10000000000-99999999999">Diatas 10M</option>
           </select>
         </div>
