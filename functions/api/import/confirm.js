@@ -81,14 +81,21 @@ async function insertProperty(env, data, admin) {
     "active", now, now
   ).run();
 
-  // Insert images jika ada
-  if (data.image_urls) {
-    const imageUrls = data.image_urls.split("|").filter(url => url.trim() !== "");
+  // Insert images jika ada (image_url1 sampai image_url10)
+  const imageUrls = [];
+  for (let i = 1; i <= 10; i++) {
+    const url = data[`image_url${i}`];
+    if (url && url.trim() !== "") {
+      imageUrls.push(url.trim());
+    }
+  }
+  
+  if (imageUrls.length > 0) {
     for (let i = 0; i < imageUrls.length; i++) {
       const imageId = crypto.randomUUID();
       await env.DB.prepare(
         "INSERT INTO property_images (id, property_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?, ?)"
-      ).bind(imageId, id, imageUrls[i].trim(), i === 0 ? 1 : 0, i).run();
+      ).bind(imageId, id, imageUrls[i], i === 0 ? 1 : 0, i).run();
     }
   }
 

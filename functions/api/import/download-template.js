@@ -52,7 +52,16 @@ const CSV_HEADERS = [
   "is_featured",
   "is_hot",
   "is_choice",
-  "image_urls"
+  "image_url1",
+  "image_url2",
+  "image_url3",
+  "image_url4",
+  "image_url5",
+  "image_url6",
+  "image_url7",
+  "image_url8",
+  "image_url9",
+  "image_url10"
 ];
 
 // Sample row untuk panduan pengisian
@@ -99,7 +108,16 @@ const SAMPLE_ROW = [
   "FALSE",
   "TRUE",
   "TRUE",
-  "https://images.salambumi.xyz/img1.webp|https://images.salambumi.xyz/img2.webp"
+  "https://images.salambumi.xyz/img1.webp",
+  "https://images.salambumi.xyz/img2.webp",
+  "https://images.salambumi.xyz/img3.webp",
+  "",
+  "",
+  "",
+  "",
+  "",
+  "",
+  ""
 ];
 
 export async function onRequestGet(context) {
