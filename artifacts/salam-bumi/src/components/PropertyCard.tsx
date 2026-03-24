@@ -3,10 +3,11 @@ import { Link } from "wouter";
 import { formatCurrency } from "@/lib/utils";
 import { Property } from "@/data/properties";
 import { 
-  MapPin, Bed, Bath, Maximize, Share2, 
+  MapPin, Bed, Bath, Maximize, Share2, Layers, Check,
   Home, Building, Hotel, Diamond, Star, Flame, ChevronLeft, ChevronRight 
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 interface PropertyCardProps {
   property: Property;
@@ -15,6 +16,8 @@ interface PropertyCardProps {
 export function PropertyCard({ property }: PropertyCardProps) {
   const [activeImg, setActiveImg] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const { toast } = useToast();
 
   const nextImg = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -24,6 +27,39 @@ export function PropertyCard({ property }: PropertyCardProps) {
   const prevImg = (e: React.MouseEvent) => {
     e.preventDefault();
     setActiveImg((p) => (p - 1 + property.images.length) % property.images.length);
+  };
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const shareUrl = `${window.location.origin}/property/${property.slug}`;
+    const shareData = {
+      title: property.title,
+      text: `${property.title} - ${formatCurrency(property.price)} | Salam Bumi Property`,
+      url: shareUrl,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        toast({ title: "Link disalin", description: "Tautan properti berhasil disalin." });
+        setTimeout(() => setCopied(false), 2000);
+      }
+    } catch {
+      // User cancelled or error — fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        toast({ title: "Link disalin", description: "Tautan properti berhasil disalin." });
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        toast({ title: "Gagal", description: "Tidak dapat menyalin link.", variant: "destructive" });
+      }
+    }
   };
 
   const getTypeIcon = () => {
@@ -106,18 +142,37 @@ export function PropertyCard({ property }: PropertyCardProps) {
           </>
         )}
 
-        {/* Bottom Badges in Image */}
+        {/* Dot Indicators */}
+        {property.images.length > 1 && (
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+            {property.images.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={(e) => { e.preventDefault(); setActiveImg(idx); }}
+                className={`w-2 h-2 rounded-full transition-all ${
+                  idx === activeImg 
+                    ? "bg-white w-4" 
+                    : "bg-white/50 hover:bg-white/80"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Purpose Badge - Bottom Left */}
         <div className="absolute bottom-3 left-3 z-20">
           <span className="bg-white/95 backdrop-blur-sm text-primary text-xs font-bold px-3 py-1.5 rounded-md shadow-sm">
             {property.purpose}
           </span>
         </div>
 
+        {/* Share Button - Bottom Right */}
         <button 
-          onClick={(e) => { e.preventDefault(); /* share logic */ }}
+          onClick={handleShare}
           className="absolute bottom-3 right-3 z-20 w-8 h-8 bg-white/95 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:text-primary hover:bg-white shadow-sm transition-colors"
+          title="Bagikan properti"
         >
-          <Share2 className="w-4 h-4" />
+          {copied ? <Check className="w-4 h-4 text-green-600" /> : <Share2 className="w-4 h-4" />}
         </button>
       </Link>
 
@@ -127,7 +182,11 @@ export function PropertyCard({ property }: PropertyCardProps) {
           <span className="text-[10px] font-semibold text-gray-400 tracking-wider uppercase">
             {property.listing_code}
           </span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-600">
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+            property.status_legalitas === "On Hand" 
+              ? "bg-green-50 text-green-700" 
+              : "bg-amber-50 text-amber-700"
+          }`}>
             {property.status_legalitas}
           </span>
         </div>
@@ -159,35 +218,55 @@ export function PropertyCard({ property }: PropertyCardProps) {
         {/* Divider */}
         <div className="h-px bg-gray-100 w-full mb-4" />
 
-        {/* Specs */}
-        <div className="grid grid-cols-4 gap-2 mb-4">
+        {/* Specs Row: LT, LB, KT, KM, Lantai */}
+        <div className="grid grid-cols-5 gap-1.5 mb-3">
+          {property.specs.lt !== undefined && property.specs.lt > 0 && (
+            <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Luas Tanah">
+              <Maximize className="w-3.5 h-3.5 text-gray-500 mb-1" />
+              <span className="text-[11px] font-semibold text-gray-700">{property.specs.lt}<span className="text-[9px]">m²</span></span>
+              <span className="text-[8px] text-gray-400">LT</span>
+            </div>
+          )}
+          {property.specs.lb !== undefined && property.specs.lb > 0 && (
+            <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Luas Bangunan">
+              <Maximize className="w-3.5 h-3.5 text-gray-500 mb-1" />
+              <span className="text-[11px] font-semibold text-gray-700">{property.specs.lb}<span className="text-[9px]">m²</span></span>
+              <span className="text-[8px] text-gray-400">LB</span>
+            </div>
+          )}
           {property.specs.kt !== undefined && (
             <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Kamar Tidur">
-              <Bed className="w-4 h-4 text-gray-500 mb-1" />
-              <span className="text-xs font-semibold text-gray-700">{property.specs.kt}</span>
+              <Bed className="w-3.5 h-3.5 text-gray-500 mb-1" />
+              <span className="text-[11px] font-semibold text-gray-700">{property.specs.kt}</span>
+              <span className="text-[8px] text-gray-400">KT</span>
             </div>
           )}
           {property.specs.km !== undefined && (
             <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Kamar Mandi">
-              <Bath className="w-4 h-4 text-gray-500 mb-1" />
-              <span className="text-xs font-semibold text-gray-700">{property.specs.km}</span>
+              <Bath className="w-3.5 h-3.5 text-gray-500 mb-1" />
+              <span className="text-[11px] font-semibold text-gray-700">{property.specs.km}</span>
+              <span className="text-[8px] text-gray-400">KM</span>
             </div>
           )}
-          {property.specs.lt !== undefined && (
-            <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Luas Tanah">
-              <Maximize className="w-4 h-4 text-gray-500 mb-1" />
-              <span className="text-xs font-semibold text-gray-700">{property.specs.lt}<span className="text-[10px]">m²</span></span>
+          {property.specs.lantai !== undefined && (
+            <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2" title="Lantai">
+              <Layers className="w-3.5 h-3.5 text-gray-500 mb-1" />
+              <span className="text-[11px] font-semibold text-gray-700">{property.specs.lantai}</span>
+              <span className="text-[8px] text-gray-400">Lt</span>
             </div>
           )}
-          <div className="flex flex-col items-center justify-center bg-gray-50 rounded-lg py-2 px-1" title="Legalitas">
-            <span className="text-[10px] text-gray-500 mb-1">Legal</span>
-            <span className="text-[10px] font-bold text-primary text-center leading-tight truncate w-full">{property.legalitas.split(',')[0]}</span>
-          </div>
         </div>
+
+        {/* Legalitas - Separate Section */}
+        {property.legalitas && (
+          <div className="flex items-center gap-2 text-xs text-gray-500 mb-4 px-1">
+            <span className="font-semibold text-primary">{property.legalitas.split(',')[0]}</span>
+          </div>
+        )}
 
         <Button asChild variant="outline" className="w-full border-primary/20 text-primary hover:bg-primary hover:text-white rounded-xl h-11 transition-all">
           <Link href={`/property/${property.slug}`}>
-            Lihat Detail Properti
+            Lihat Detail
           </Link>
         </Button>
       </div>

@@ -164,33 +164,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return true;
       }
     } catch (apiError: unknown) {
-      // API error - cek apakah connection error atau auth error
-      const errorMsg = apiError instanceof Error ? apiError.message : "";
+      // API error — cek apakah ini auth error dari backend yang valid
       const errorStatus = (apiError as any)?.status;
-      
-      // Fallback ke local auth jika:
-      // 1. Connection error (Failed to fetch, NetworkError)
-      // 2. Server error (500, 502, 503)
-      // 3. Not Found (404) - endpoint tidak tersedia
-      if (
-        errorMsg.includes("Failed to fetch") || 
-        errorMsg.includes("NetworkError") ||
-        errorMsg.includes("HTTP 500") ||
-        errorMsg.includes("HTTP 502") ||
-        errorMsg.includes("HTTP 503") ||
-        errorMsg.includes("HTTP 404") ||
-        errorStatus === 500 ||
-        errorStatus === 502 ||
-        errorStatus === 503 ||
-        errorStatus === 404
-      ) {
-        // Backend tidak tersedia atau error, fallback ke local auth
-        console.warn("API tidak tersedia/error, menggunakan local auth");
-      } else {
-        // Auth error dari API (401 - wrong credentials, dll)
+      const errorMsg = apiError instanceof Error ? apiError.message : "";
+
+      // Hanya return false jika API benar-benar menolak kredensial (401 dengan pesan jelas)
+      // Semua error lain → fallback ke local auth
+      if (errorStatus === 401 && (errorMsg.includes("password") || errorMsg.includes("credentials") || errorMsg.includes("Email"))) {
         logActivity("Login Failed", `Percobaan login gagal: ${email}`);
         return false;
       }
+
+      // Semua error lain (connection, server error, JSON parse, 404, dll) → fallback ke local auth
+      console.warn("API tidak tersedia, menggunakan local auth:", errorMsg);
     }
 
     // Fallback: local auth dengan bcrypt

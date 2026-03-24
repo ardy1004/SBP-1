@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { AdminLayout } from "../components/AdminLayout";
-import { propertiesApi } from "@/lib/api-client";
+import { propertiesApi, leadsApi } from "@/lib/api-client";
 import { formatCurrency } from "@/lib/utils";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
@@ -11,7 +11,7 @@ import {
 import {
   Home, Tag, CheckCircle, Users, Plus, FileSignature,
   BarChart3, TrendingUp, ArrowUpRight, Eye, Clock,
-  FileText, Activity, DollarSign, Loader2
+  FileText, Activity, DollarSign, Loader2, Pencil
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -120,28 +120,23 @@ export default function AdminDashboard() {
           setRecentProperties(properties.slice(0, 5));
         }
 
-        // Try to fetch leads (if API exists)
+        // Fetch leads
         try {
-          const leadsRes = await fetch("/api/leads/list", {
-            headers: {
-              "Authorization": `Bearer ${localStorage.getItem("sbp_admin_token")}`,
-            },
-          });
-          if (leadsRes.ok) {
-            const leadsData = await leadsRes.json();
-            if (leadsData.success && leadsData.data) {
-              const leads = leadsData.data;
-              setStats(prev => ({
-                ...prev,
-                totalLeads: leads.length,
-                newLeads: leads.filter((l: any) => l.status === "new").length,
-                hotLeads: leads.filter((l: any) => l.priority === "hot").length,
-              }));
-            }
+          const leadsResult = await leadsApi.getAll({ limit: 1000 });
+          if (leadsResult.success && leadsResult.data) {
+            const leads = leadsResult.data;
+            const totalLeads = leadsResult.pagination?.total || leads.length;
+            const newLeads = leads.filter((l: any) => l.status === "new").length;
+            const hotLeads = leads.filter((l: any) => l.priority === "hot").length;
+            setStats(prev => ({
+              ...prev,
+              totalLeads,
+              newLeads,
+              hotLeads,
+            }));
           }
         } catch (e) {
-          // Leads API might not exist yet
-          console.log("Leads API not available");
+          // Leads API not available in dev
         }
 
       } catch (error) {
@@ -180,7 +175,7 @@ export default function AdminDashboard() {
               label="Total Properti"
               value={stats.totalProperties}
               sub={`${stats.activeProperties} tersedia`}
-              trend={`Database real`}
+              trend={`${stats.totalProperties} properti`}
               color="blue"
             />
             <StatCard
@@ -188,7 +183,7 @@ export default function AdminDashboard() {
               label="Properti Aktif"
               value={stats.activeProperties}
               sub={`${stats.activeProperties} tersedia`}
-              trend={`${stats.activeProperties} tersedia`}
+              trend={`${stats.activeProperties} aktif`}
               color="green"
             />
             <StatCard
@@ -196,16 +191,16 @@ export default function AdminDashboard() {
               label="Terjual"
               value={stats.soldProperties}
               sub={`Total terjual`}
-              trend={`Data dari database`}
+              trend={`${stats.soldProperties} terjual`}
               color="gold"
             />
             <StatCard
               icon={Users}
-              label="Lead Baru"
-              value={stats.newLeads}
+              label="Total Lead"
+              value={stats.totalLeads}
               sub={`${stats.newLeads} belum direspond`}
-              trend={`${stats.newLeads} belum direspond`}
-              trendPositive={false}
+              trend={`${stats.hotLeads} lead panas`}
+              trendPositive={stats.newLeads === 0}
               color="red"
             />
           </div>
@@ -245,19 +240,19 @@ export default function AdminDashboard() {
                 {recentProperties.map((p, i) => (
                   <div key={p.id || i} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
                     <img 
-                      src={p.image || "https://via.placeholder.com/100"} 
+                      src={p.image || p.primary_image || "https://via.placeholder.com/100"} 
                       alt={p.title}
                       className="w-16 h-16 rounded-lg object-cover border border-gray-100"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-gray-900 text-sm truncate">{p.title}</div>
                       <div className="text-xs text-gray-500">{p.listing_code} · {p.property_type}</div>
-                      <div className="text-xs font-bold text-primary">{formatCurrency(p.price)}</div>
+                      <div className="text-xs font-bold text-primary">{formatCurrency(p.price || p.price_offer || 0)}</div>
                     </div>
                     <div className="flex gap-1">
                       <Link href={`/admin/properties/edit/${p.id}`}>
-                        <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                          <Eye className="w-4 h-4" />
+                        <button className="p-2 text-gray-400 hover:text-primary hover:bg-primary/10 rounded-lg transition-colors" title="Edit properti">
+                          <Pencil className="w-4 h-4" />
                         </button>
                       </Link>
                     </div>

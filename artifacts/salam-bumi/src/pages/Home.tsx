@@ -74,7 +74,7 @@ function apiPropertyToMock(apiProp: Property) {
 
 export default function Home() {
   const [properties, setProperties] = useState(mockProperties);
-  const [visibleCount, setVisibleCount] = useState(8);
+  const [visibleCount, setVisibleCount] = useState(20);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -116,7 +116,7 @@ export default function Home() {
               alt="Real Estate Jogja" 
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-b from-[#0B152A]/80 via-[#0B152A]/60 to-[#0B152A]/90 mix-blend-multiply" />
+            <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/60 to-black/60" />
           </div>
 
           <div className="container relative z-10 mx-auto px-4 md:px-6 lg:px-8 text-center text-white mt-10">
@@ -214,7 +214,7 @@ export default function Home() {
                 {visibleCount < properties.length && (
                   <div className="flex justify-center">
                     <Button 
-                      onClick={() => setVisibleCount(prev => Math.min(prev + 8, properties.length))}
+                      onClick={() => setVisibleCount(prev => Math.min(prev + 20, properties.length))}
                       className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-primary/20 transition-all hover:-translate-y-1"
                     >
                       Muat Lebih Banyak Properti

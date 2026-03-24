@@ -17,9 +17,10 @@ export async function onRequestGet(context) {
   try {
     const { slug } = params;
 
+    // Query by slug OR id (UUID) — admin edit uses id, public uses slug
     let property = await env.DB.prepare(
-      `SELECT p.* FROM properties p WHERE p.slug = ?`
-    ).bind(slug).first();
+      `SELECT p.* FROM properties p WHERE p.slug = ? OR p.id = ?`
+    ).bind(slug, slug).first();
 
     // Jika tidak ditemukan, cek slug_redirects untuk 301 redirect
     if (!property && env.DB) {

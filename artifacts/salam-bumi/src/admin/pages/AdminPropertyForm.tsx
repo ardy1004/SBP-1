@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useParams, useLocation, Link } from "wouter";
 import { AdminLayout } from "../components/AdminLayout";
 import { SlugPreview } from "@/components/admin/SlugPreview";
@@ -140,67 +140,143 @@ export default function AdminPropertyForm() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const isEdit = !!id;
-  // TODO: Fetch existing property from API when in edit mode
-  const existing: any = null;
 
-  const [listingCode] = useState(existing?.listing_code || generateListingCode());
-  const [title, setTitle] = useState(existing?.title || "");
-  const [slug, setSlug] = useState(existing?.slug || "");
-  const [purpose, setPurpose] = useState<Purpose>(existing?.purpose as Purpose || "Dijual");
-  const [price, setPrice] = useState(existing?.price?.toString() || "");
-  const [oldPrice, setOldPrice] = useState(existing?.old_price?.toString() || "");
+  // Fetch existing property when in edit mode
+  const [existing, setExisting] = useState<any>(null);
+  const [loadingProperty, setLoadingProperty] = useState(isEdit);
+
+  useEffect(() => {
+    if (!isEdit || !id) return;
+    const fetchProperty = async () => {
+      try {
+        const result = await propertiesApi.getBySlug(id);
+        if (result.success && result.data) {
+          setExisting(result.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch property for edit:", err);
+        toast({ title: "Gagal memuat data properti", variant: "destructive" });
+      } finally {
+        setLoadingProperty(false);
+      }
+    };
+    fetchProperty();
+  }, [id, isEdit]);
+
+  const [listingCode, setListingCode] = useState(generateListingCode());
+  const [title, setTitle] = useState("");
+  const [slug, setSlug] = useState("");
+  const [purpose, setPurpose] = useState<Purpose>("Dijual");
+  const [price, setPrice] = useState("");
+  const [oldPrice, setOldPrice] = useState("");
   const [priceRent, setPriceRent] = useState("");
-  const [labels, setLabels] = useState<string[]>(() => {
-    const l: string[] = [];
-    if (existing?.badges?.is_premium) l.push("is_premium");
-    if (existing?.badges?.is_featured) l.push("is_featured");
-    if (existing?.badges?.is_hot) l.push("is_hot");
-    if (existing?.badges?.is_sold) l.push("is_sold");
-    return l;
-  });
+  const [labels, setLabels] = useState<string[]>([]);
   const [priceType, setPriceType] = useState<string[]>([]);
 
-  const [province, setProvince] = useState(existing?.province || "DI. Yogyakarta");
-  const [city, setCity] = useState(existing?.city || "");
-  const [district, setDistrict] = useState(existing?.district || "");
-  const [village, setVillage] = useState(existing?.village || "");
-  const [address, setAddress] = useState(existing?.address || "");
-  const [googleMapsUrl, setGoogleMapsUrl] = useState(existing?.google_maps_url || "");
+  const [province, setProvince] = useState("DI. Yogyakarta");
+  const [city, setCity] = useState("");
+  const [district, setDistrict] = useState("");
+  const [village, setVillage] = useState("");
+  const [address, setAddress] = useState("");
+  const [googleMapsUrl, setGoogleMapsUrl] = useState("");
 
-  const [propertyType, setPropertyType] = useState<PropertyType>(existing?.type as PropertyType || "Rumah");
-  const [landArea, setLandArea] = useState(existing?.land_area?.toString() || "");
-  const [buildingArea, setBuildingArea] = useState(existing?.building_area?.toString() || "");
-  const [frontWidth, setFrontWidth] = useState(existing?.front_width?.toString() || "");
-  const [floors, setFloors] = useState(existing?.floors?.toString() || "");
-  const [bedrooms, setBedrooms] = useState(existing?.bedrooms?.toString() || "");
-  const [bathrooms, setBathrooms] = useState(existing?.bathrooms?.toString() || "");
+  const [propertyType, setPropertyType] = useState<PropertyType>("Rumah");
+  const [landArea, setLandArea] = useState("");
+  const [buildingArea, setBuildingArea] = useState("");
+  const [frontWidth, setFrontWidth] = useState("");
+  const [floors, setFloors] = useState("");
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
   const [kostType, setKostType] = useState<string[]>([]);
   const [furnishing, setFurnishing] = useState("");
   const [hotelType, setHotelType] = useState("");
 
-  const [legalStatus, setLegalStatus] = useState<LegalStatus>(existing?.legal_status as LegalStatus || "SHM & IMB/PBG Lengkap");
-  const [ownership, setOwnership] = useState<"On Hand" | "On Bank">(existing?.bank_name ? "On Bank" : "On Hand");
-  const [bankName, setBankName] = useState(existing?.bank_name || "");
+  const [legalStatus, setLegalStatus] = useState<LegalStatus>("SHM & IMB/PBG Lengkap");
+  const [ownership, setOwnership] = useState<"On Hand" | "On Bank">("On Hand");
+  const [bankName, setBankName] = useState("");
   const [outstanding, setOutstanding] = useState("");
   const [shgbExpiry, setShgbExpiry] = useState("");
 
   const [envStatus, setEnvStatus] = useState("Ya Jauh");
-  const [distRiver, setDistRiver] = useState(existing?.distance_to_river?.toString() || "");
-  const [distGrave, setDistGrave] = useState(existing?.distance_to_grave?.toString() || "");
-  const [distPower, setDistPower] = useState(existing?.distance_to_powerline?.toString() || "");
-  const [roadWidth, setRoadWidth] = useState(existing?.road_width?.toString() || "");
+  const [distRiver, setDistRiver] = useState("");
+  const [distGrave, setDistGrave] = useState("");
+  const [distPower, setDistPower] = useState("");
+  const [roadWidth, setRoadWidth] = useState("");
 
-  const [description, setDescription] = useState(existing?.description || "");
-  const [facilities, setFacilities] = useState(existing?.facilities?.join(", ") || "");
-  const [sellingReason, setSellingReason] = useState(existing?.selling_reason || "");
+  const [description, setDescription] = useState("");
+  const [facilities, setFacilities] = useState("");
+  const [sellingReason, setSellingReason] = useState("");
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [dragging, setDragging] = useState(false);
-  const [videoUrl, setVideoUrl] = useState(existing?.video_url || "");
+  const [videoUrl, setVideoUrl] = useState("");
 
   const [ownerName, setOwnerName] = useState("");
   const [ownerWa1, setOwnerWa1] = useState("");
   const [ownerWa2, setOwnerWa2] = useState("");
+
+  // Populate form fields when existing property data is loaded (edit mode)
+  useEffect(() => {
+    if (!existing) return;
+    const d = existing;
+
+    setListingCode(d.listing_code || generateListingCode());
+    setTitle(d.title || "");
+    setSlug(d.slug || "");
+    setPurpose(d.purpose || "Dijual");
+    setPrice(d.price?.toString() || d.price_offer?.toString() || "");
+    setOldPrice(d.old_price?.toString() || "");
+    setPriceRent(d.price_rent?.toString() || "");
+
+    const lbl: string[] = [];
+    if (d.is_premium) lbl.push("is_premium");
+    if (d.is_featured) lbl.push("is_featured");
+    if (d.is_hot) lbl.push("is_hot");
+    if (d.is_sold) lbl.push("is_sold");
+    if (d.is_choice) lbl.push("is_choice");
+    setLabels(lbl);
+
+    setProvince(d.province || "DI. Yogyakarta");
+    setCity(d.city || "");
+    setDistrict(d.district || "");
+    setVillage(d.village || "");
+    setAddress(d.address || "");
+    setGoogleMapsUrl(d.google_maps_url || "");
+
+    setPropertyType(d.property_type || d.type || "Rumah");
+    setLandArea(d.land_area?.toString() || "");
+    setBuildingArea(d.building_area?.toString() || "");
+    setFrontWidth(d.front_width?.toString() || "");
+    setFloors(d.floors?.toString() || "");
+    setBedrooms(d.bedrooms?.toString() || "");
+    setBathrooms(d.bathrooms?.toString() || "");
+
+    setLegalStatus(d.legal_status || "SHM & IMB/PBG Lengkap");
+    setOwnership(d.bank_name ? "On Bank" : (d.ownership_status || "On Hand"));
+    setBankName(d.bank_name || "");
+    setOutstanding(d.outstanding_amount?.toString() || "");
+
+    if (d.distance_to_river) { setEnvStatus("Dekat Sungai"); setDistRiver(d.distance_to_river.toString()); }
+    else if (d.distance_to_grave) { setEnvStatus("Dekat Makam"); setDistGrave(d.distance_to_grave.toString()); }
+    else if (d.distance_to_powerline) { setEnvStatus("Dekat Sutet"); setDistPower(d.distance_to_powerline.toString()); }
+    setRoadWidth(d.road_width?.toString() || "");
+
+    setDescription(d.description || "");
+    setFacilities(Array.isArray(d.facilities) ? d.facilities.join(", ") : (d.facilities || ""));
+    setSellingReason(d.selling_reason || "");
+    setVideoUrl(d.video_url || "");
+
+    setOwnerName(d.owner_name || "");
+    setOwnerWa1(d.owner_whatsapp_1 || "");
+    setOwnerWa2(d.owner_whatsapp_2 || "");
+
+    // Images
+    if (d.images?.length) {
+      setImageUrls(d.images.map((i: any) => i.url || i));
+    } else if (d.image) {
+      setImageUrls([d.image]);
+    }
+  }, [existing]);
 
   const handleTitleChange = (v: string) => {
     setTitle(v);
@@ -318,34 +394,40 @@ export default function AdminPropertyForm() {
      }
 
      try {
-       const result = await propertiesApi.create(propertyData);
-       
-       // Simpan gambar ke property_images table jika ada
-       if (imageUrls.length > 0 && result.id) {
-         for (let i = 0; i < imageUrls.length; i++) {
-           try {
-             await fetch("/api/properties/save-image", {
-               method: "POST",
-               headers: {
-                 "Content-Type": "application/json",
-               },
-               body: JSON.stringify({
-                 property_id: result.id,
-                 image_url: imageUrls[i],
-                 is_primary: i === 0,
-                 sort_order: i,
-               }),
-             });
-           } catch (imgErr) {
-             console.error("Failed to save image:", imgErr);
-           }
-         }
-       }
-       
-       toast({
-         title: mode === "draft" ? "Draft tersimpan!" : "Properti dipublish!",
-         description: mode === "draft" ? `"${title}" disimpan sebagai draft.` : `"${title}" berhasil dipublish ke website.`,
-       });
+        const result = isEdit && id
+          ? await propertiesApi.update(id, propertyData)
+          : await propertiesApi.create(propertyData);
+        
+        const propertyId = isEdit ? id : result.id;
+
+        // Simpan gambar ke property_images table jika ada
+        if (imageUrls.length > 0 && propertyId) {
+          for (let i = 0; i < imageUrls.length; i++) {
+            try {
+              await fetch("/api/properties/save-image", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                  property_id: propertyId,
+                  image_url: imageUrls[i],
+                  is_primary: i === 0,
+                  sort_order: i,
+                }),
+              });
+            } catch (imgErr) {
+              console.error("Failed to save image:", imgErr);
+            }
+          }
+        }
+        
+        toast({
+          title: mode === "draft" ? "Draft tersimpan!" : (isEdit ? "Properti diupdate!" : "Properti dipublish!"),
+          description: isEdit
+            ? `"${title}" berhasil diupdate.`
+            : (mode === "draft" ? `"${title}" disimpan sebagai draft.` : `"${title}" berhasil dipublish ke website.`),
+        });
        setLocation("/admin/properties");
      } catch (err) {
        console.error("Failed to create property:", err);
@@ -376,6 +458,14 @@ export default function AdminPropertyForm() {
 
   return (
     <AdminLayout title={isEdit ? "Edit Properti" : "Tambah Properti Baru"}>
+      {loadingProperty ? (
+        <div className="flex items-center justify-center py-20">
+          <div className="text-center">
+            <div className="w-10 h-10 border-4 border-primary/30 border-t-primary rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-gray-500">Memuat data properti...</p>
+          </div>
+        </div>
+      ) : (<>
       {/* Breadcrumb */}
       <div className="flex items-center text-sm text-gray-500 mb-5 gap-2">
         <Link href="/admin/properties" className="hover:text-primary">Kelola Properti</Link>
@@ -712,6 +802,7 @@ export default function AdminPropertyForm() {
           </Button>
         </div>
       </div>
+      </>)}
     </AdminLayout>
   );
 }

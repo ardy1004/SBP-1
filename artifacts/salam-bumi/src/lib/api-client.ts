@@ -57,11 +57,15 @@ async function apiFetch<T = unknown>(
     headers,
   });
 
-  // Handle 401 - auto logout
+  // Handle 401 - auto logout (skip for local dev tokens)
   if (response.status === 401 && auth) {
-    clearToken();
-    if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/admin/login") {
-      window.location.href = "/admin/login";
+    const token = getToken();
+    const isLocalToken = token && token.includes('"local":true');
+    if (!isLocalToken) {
+      clearToken();
+      if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/admin/login") {
+        window.location.href = "/admin/login";
+      }
     }
   }
 
@@ -107,6 +111,13 @@ export const propertiesApi = {
 
   getBySlug: (slug: string) =>
     apiFetch<{ success: boolean; data: PropertyDetail }>(`/api/properties/${slug}`),
+
+  getRelated: (excludeId: string, type?: string, city?: string, limit: number = 4) => {
+    const params = new URLSearchParams({ exclude: excludeId, limit: String(limit) });
+    if (type) params.set("type", type);
+    if (city) params.set("city", city);
+    return apiFetch<{ success: boolean; data: Property[] }>(`/api/properties/related?${params}`);
+  },
 
   create: (data: Record<string, unknown>) =>
     apiFetch<{ success: boolean; id: string; slug: string }>("/api/properties", {

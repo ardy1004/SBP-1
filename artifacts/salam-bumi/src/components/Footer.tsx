@@ -41,6 +41,20 @@ export function Footer() {
           </div>
 
           <div>
+            <h4 className="font-bold text-lg mb-6 border-b border-white/10 pb-3 inline-block">Populer di Yogyakarta</h4>
+            <ul className="space-y-3">
+              {['Kost Dijual UGM', 'Rumah Sleman', 'Tanah Bantul', 'Villa Kaliurang'].map(item => (
+                <li key={item}>
+                  <Link href="#" className="text-gray-400 hover:text-secondary transition-colors text-sm flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50"></span>
+                    {item}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
             <h4 className="font-bold text-lg mb-6 border-b border-white/10 pb-3 inline-block">Jenis Properti</h4>
             <ul className="space-y-3">
               {['Rumah', 'Kost', 'Tanah', 'Villa', 'Ruko', 'Apartment'].map(item => (
@@ -68,27 +82,21 @@ export function Footer() {
             </ul>
           </div>
 
-          <div>
+        </div>
+
+        {/* Second Row: Investasi + Social */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-8 mb-16">
+          <div className="lg:col-start-5">
             <h4 className="font-bold text-lg mb-6 border-b border-white/10 pb-3 inline-block">Investasi</h4>
             <ul className="space-y-3 mb-8">
-              <li>
-                <Link href="#" className="text-gray-400 hover:text-secondary transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-secondary/50"></span>
-                  Kost Dijual UGM
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-400 hover:text-secondary transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-secondary/50"></span>
-                  Properti Dekat Kampus
-                </Link>
-              </li>
-              <li>
-                <Link href="#" className="text-gray-400 hover:text-secondary transition-colors text-sm flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-secondary/50"></span>
-                  Kost Investasi
-                </Link>
-              </li>
+              {['Kost Dijual UGM', 'Properti Dekat Kampus', 'Kost Investasi'].map(item => (
+                <li key={item}>
+                  <Link href="#" className="text-gray-400 hover:text-secondary transition-colors text-sm flex items-center gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary/50"></span>
+                    {item}
+                  </Link>
+                </li>
+              ))}
             </ul>
 
             <h4 className="font-bold text-lg mb-4">Ikuti Kami</h4>
@@ -104,12 +112,11 @@ export function Footer() {
               </a>
             </div>
           </div>
-
         </div>
 
         <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-gray-500 text-sm">
-            &copy; {new Date().getFullYear()} Salam Bumi Property. All rights reserved.
+            &copy; 2026 Salam Bumi Property. All rights reserved.
           </p>
           <div className="flex items-center gap-6 text-sm text-gray-500">
             <Link href="#" className="hover:text-white transition-colors">Privacy Policy</Link>

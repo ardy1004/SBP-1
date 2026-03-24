@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useParams, Link, useLocation } from "wouter";
 import { mockProperties, Property } from "@/data/properties";
 import { propertiesApi } from "@/lib/api-client";
+import type { Property as ApiProperty } from "@/lib/api-client";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ContactAgentForm } from "@/components/ContactAgentForm";
@@ -26,6 +27,66 @@ import {
   Droplets, AlertTriangle, Zap, Calculator
 } from "lucide-react";
 
+/**
+ * Convert API related property to mock PropertyCard format
+ */
+function apiRelatedToMock(apiProp: ApiProperty): Property {
+  return {
+    id: apiProp.id,
+    listing_code: apiProp.listing_code || "",
+    title: apiProp.title,
+    slug: apiProp.slug,
+    price: apiProp.price,
+    old_price: apiProp.old_price,
+    purpose: apiProp.purpose as "Dijual" | "Disewa" | "Dijual & Disewa",
+    type: (apiProp.property_type || "Rumah") as any,
+    location: apiProp.location,
+    specs: {
+      lt: apiProp.land_area,
+      lb: apiProp.building_area,
+      kt: apiProp.bedrooms,
+      km: apiProp.bathrooms,
+      lantai: apiProp.floors,
+    },
+    images: apiProp.image ? [apiProp.image] : [DEFAULT_IMAGE],
+    badges: {
+      is_premium: apiProp.is_premium,
+      is_featured: apiProp.is_featured,
+      is_hot: apiProp.is_hot,
+      is_sold: apiProp.is_sold,
+      is_choice: apiProp.is_choice,
+    },
+    legalitas: (apiProp as any).legal_status || "",
+    status_legalitas: ((apiProp as any).ownership_status || "On Hand") as "On Hand" | "On Bank",
+    province: apiProp.province,
+    city: apiProp.city,
+    district: apiProp.district || "",
+    village: "",
+    address: "",
+    land_area: apiProp.land_area,
+    building_area: apiProp.building_area,
+    front_width: 0,
+    floors: apiProp.floors,
+    bedrooms: apiProp.bedrooms,
+    bathrooms: apiProp.bathrooms,
+    legal_status: "SHM & IMB/PBG Lengkap",
+    legal_details: "",
+    bank_name: null,
+    outstanding_amount: null,
+    distance_to_river: null,
+    distance_to_grave: null,
+    distance_to_powerline: null,
+    road_width: 6,
+    description: "",
+    facilities: [],
+    selling_reason: "",
+    google_maps_url: "",
+    video_url: null,
+  };
+}
+
+const DEFAULT_IMAGE = "https://images.salambumi.xyz/kost%20dijual%20jogja.webp";
+
 export default function PropertyDetail() {
   const { slug } = useParams<{ slug: string }>();
   const [, setLocation] = useLocation();
@@ -36,6 +97,14 @@ export default function PropertyDetail() {
   );
   const [loading, setLoading] = useState(true);
 
+  // Reset property when slug changes (navigation between detail pages)
+  useEffect(() => {
+    const mockProp = mockProperties.find(p => p.slug === slug);
+    if (mockProp) {
+      setProperty(mockProp);
+    }
+  }, [slug]);
+
   // Fetch dari API, fallback ke mock data
   useEffect(() => {
     const fetchProperty = async () => {
@@ -44,6 +113,7 @@ export default function PropertyDetail() {
         const result = await propertiesApi.getBySlug(slug);
         if (result.success && result.data) {
           const d = result.data;
+          const mockFallback = mockProperties.find(p => p.slug === slug);
           setProperty({
             id: d.id,
             listing_code: d.listing_code,
@@ -55,7 +125,7 @@ export default function PropertyDetail() {
             type: d.property_type as any,
             location: d.location,
             specs: { lt: d.land_area, lb: d.building_area, kt: d.bedrooms, km: d.bathrooms, lantai: d.floors },
-            images: d.images?.length ? d.images.map((i: any) => i.url) : (d.image ? [d.image] : property?.images || []),
+            images: d.images?.length ? d.images.map((i: any) => i.url) : (d.image ? [d.image] : mockFallback?.images || []),
             badges: { is_premium: d.is_premium, is_featured: d.is_featured, is_hot: d.is_hot, is_sold: d.is_sold, is_choice: d.is_choice },
             legalitas: d.legal_status || "",
             status_legalitas: d.ownership_status as any || "On Hand",
@@ -78,7 +148,11 @@ export default function PropertyDetail() {
           } as Property);
         }
       } catch {
-        // API tidak tersedia, gunakan mock data yang sudah di-set
+        // API tidak tersedia, fallback ke mock data untuk slug saat ini
+        const mockProp = mockProperties.find(p => p.slug === slug);
+        if (mockProp) {
+          setProperty(mockProp);
+        }
       } finally {
         setLoading(false);
       }
@@ -114,11 +188,35 @@ export default function PropertyDetail() {
     }
   }, [property]);
 
-  const relatedProperties = useMemo(() => {
-    if (!property) return [];
-    return mockProperties
-      .filter(p => p.id !== property.id && (p.type === property.type || p.city === property.city))
-      .slice(0, 4);
+  // Related properties — fetch from API, fallback to mock data
+  const [relatedProperties, setRelatedProperties] = useState<Property[]>([]);
+
+  useEffect(() => {
+    if (!property) return;
+
+    const fetchRelated = async () => {
+      try {
+        const result = await propertiesApi.getRelated(property.id, property.type, property.city, 4);
+        if (result.success && result.data.length > 0) {
+          setRelatedProperties(result.data.map(apiRelatedToMock));
+        } else {
+          // API returned empty — fallback to mock
+          fallbackToMockRelated();
+        }
+      } catch {
+        // API unavailable — fallback to mock
+        fallbackToMockRelated();
+      }
+    };
+
+    const fallbackToMockRelated = () => {
+      const mockRelated = mockProperties
+        .filter(p => p.id !== property.id && (p.type === property.type || p.city === property.city))
+        .slice(0, 4);
+      setRelatedProperties(mockRelated);
+    };
+
+    fetchRelated();
   }, [property]);
 
   if (!property) {
@@ -206,7 +304,7 @@ export default function PropertyDetail() {
                   </div>
 
                   <Swiper
-                    loop={true}
+                    loop={property.images.length > 1}
                     spaceBetween={10}
                     navigation={true}
                     thumbs={{ swiper: thumbsSwiper && !thumbsSwiper.destroyed ? thumbsSwiper : null }}
@@ -223,19 +321,20 @@ export default function PropertyDetail() {
                   </Swiper>
                 </div>
 
+                {property.images.length > 1 && (
                 <div className="h-20 md:h-24">
                   <Swiper
                     onSwiper={setThumbsSwiper}
-                    loop={true}
+                    loop={property.images.length > 6}
                     spaceBetween={10}
-                    slidesPerView={4}
+                    slidesPerView={Math.min(4, property.images.length)}
                     freeMode={true}
                     watchSlidesProgress={true}
                     modules={[FreeMode, Navigation, Thumbs]}
                     className="w-full h-full"
                     breakpoints={{
-                      640: { slidesPerView: 5 },
-                      768: { slidesPerView: 6 },
+                      640: { slidesPerView: Math.min(5, property.images.length) },
+                      768: { slidesPerView: Math.min(6, property.images.length) },
                     }}
                   >
                     {property.images.map((img, idx) => (
@@ -245,6 +344,7 @@ export default function PropertyDetail() {
                     ))}
                   </Swiper>
                 </div>
+                )}
               </div>
 
               {/* Property Info - Desktop Title Section */}
