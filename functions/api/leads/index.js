@@ -54,11 +54,15 @@ export async function onRequestPost(context) {
       now
     ).run();
 
-    // Increment leads_count pada properti jika ada
+    // Increment leads_count pada properti jika kolom tersedia
     if (body.property_id) {
-      await env.DB.prepare(
-        "UPDATE properties SET leads_count = leads_count + 1 WHERE id = ?"
-      ).bind(body.property_id).run();
+      try {
+        await env.DB.prepare(
+          "UPDATE properties SET leads_count = COALESCE(leads_count, 0) + 1 WHERE id = ?"
+        ).bind(body.property_id).run();
+      } catch (leadCountError) {
+        console.warn("[LEADS] Skip leads_count update:", leadCountError?.message || leadCountError);
+      }
     }
 
     return jsonResponse({

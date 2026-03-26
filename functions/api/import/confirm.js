@@ -49,37 +49,73 @@ async function insertProperty(env, data, admin) {
   const isChoice = (data.is_choice || "").toUpperCase() === "TRUE" ? 1 : 0;
 
   // Insert property
-  await env.DB.prepare(`
-    INSERT INTO properties (
-      id, listing_code, title, slug, purpose, property_type,
-      price_offer, price_rent, price_type, old_price,
-      province, city, district, village, address,
-      latitude, longitude, land_area, building_area, front_width,
-      floors, bedrooms, bathrooms, legal_status, ownership_status,
-      bank_name, outstanding_amount, distance_to_river, distance_to_grave,
-      distance_to_powerline, road_width, description, facilities,
-      selling_reason, owner_name, owner_whatsapp_1, owner_whatsapp_2,
-      google_maps_url, video_url, is_premium, is_featured, is_hot, is_choice,
-      status, created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).bind(
-    id, listingCode, data.title, slug, data.purpose, data.property_type,
-    parseInt(data.price_offer) || 0, parseInt(data.price_rent) || 0, data.price_type || null, parseInt(data.old_price) || null,
-    data.province, data.city, data.district, data.village || null, data.address,
-    parseFloat(data.latitude) || null, parseFloat(data.longitude) || null,
-    parseInt(data.land_area) || 0, parseInt(data.building_area) || 0, parseInt(data.front_width) || null,
-    parseInt(data.floors) || 1, parseInt(data.bedrooms) || 0, parseInt(data.bathrooms) || 0,
-    data.legal_status || null, data.ownership_status || "On Hand",
-    data.bank_name || null, parseInt(data.outstanding_amount) || null,
-    parseInt(data.distance_to_river) || null, parseInt(data.distance_to_grave) || null,
-    parseInt(data.distance_to_powerline) || null, parseInt(data.road_width) || null,
-    data.description || null, data.facilities || null,
-    data.selling_reason || null, data.owner_name || null,
-    data.owner_whatsapp_1 || null, data.owner_whatsapp_2 || null,
-    data.google_maps_url || null, data.video_url || null,
-    isPremium, isFeatured, isHot, isChoice,
-    "active", now, now
-  ).run();
+  try {
+    await env.DB.prepare(`
+      INSERT INTO properties (
+        id, listing_code, title, slug, purpose, property_type,
+        price_offer, price_rent, price_type, old_price,
+        province, city, district, village, address,
+        latitude, longitude, land_area, building_area, front_width,
+        floors, bedrooms, bathrooms, legal_status, ownership_status,
+        bank_name, outstanding_amount, distance_to_river, distance_to_grave,
+        distance_to_powerline, road_width, description, facilities,
+        selling_reason, owner_name, owner_whatsapp_1, owner_whatsapp_2,
+        google_maps_url, video_url, is_premium, is_featured, is_hot, is_choice,
+        status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id, listingCode, data.title, slug, data.purpose, data.property_type,
+      parseInt(data.price_offer) || 0, parseInt(data.price_rent) || 0, data.price_type || null, parseInt(data.old_price) || null,
+      data.province, data.city, data.district, data.village || null, data.address,
+      parseFloat(data.latitude) || null, parseFloat(data.longitude) || null,
+      parseInt(data.land_area) || 0, parseInt(data.building_area) || 0, parseInt(data.front_width) || null,
+      parseInt(data.floors) || 1, parseInt(data.bedrooms) || 0, parseInt(data.bathrooms) || 0,
+      data.legal_status || null, data.ownership_status || "On Hand",
+      data.bank_name || null, parseInt(data.outstanding_amount) || null,
+      parseInt(data.distance_to_river) || null, parseInt(data.distance_to_grave) || null,
+      parseInt(data.distance_to_powerline) || null, parseInt(data.road_width) || null,
+      data.description || null, data.facilities || null,
+      data.selling_reason || null, data.owner_name || null,
+      data.owner_whatsapp_1 || null, data.owner_whatsapp_2 || null,
+      data.google_maps_url || null, data.video_url || null,
+      isPremium, isFeatured, isHot, isChoice,
+      "active", now, now
+    ).run();
+  } catch (insertError) {
+    const message = insertError?.message || String(insertError);
+    if (!message.includes("video_url")) throw insertError;
+
+    await env.DB.prepare(`
+      INSERT INTO properties (
+        id, listing_code, title, slug, purpose, property_type,
+        price_offer, price_rent, price_type, old_price,
+        province, city, district, village, address,
+        latitude, longitude, land_area, building_area, front_width,
+        floors, bedrooms, bathrooms, legal_status, ownership_status,
+        bank_name, outstanding_amount, distance_to_river, distance_to_grave,
+        distance_to_powerline, road_width, description, facilities,
+        selling_reason, owner_name, owner_whatsapp_1, owner_whatsapp_2,
+        google_maps_url, is_premium, is_featured, is_hot, is_choice,
+        status, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      id, listingCode, data.title, slug, data.purpose, data.property_type,
+      parseInt(data.price_offer) || 0, parseInt(data.price_rent) || 0, data.price_type || null, parseInt(data.old_price) || null,
+      data.province, data.city, data.district, data.village || null, data.address,
+      parseFloat(data.latitude) || null, parseFloat(data.longitude) || null,
+      parseInt(data.land_area) || 0, parseInt(data.building_area) || 0, parseInt(data.front_width) || null,
+      parseInt(data.floors) || 1, parseInt(data.bedrooms) || 0, parseInt(data.bathrooms) || 0,
+      data.legal_status || null, data.ownership_status || "On Hand",
+      data.bank_name || null, parseInt(data.outstanding_amount) || null,
+      parseInt(data.distance_to_river) || null, parseInt(data.distance_to_grave) || null,
+      parseInt(data.distance_to_powerline) || null, parseInt(data.road_width) || null,
+      data.description || null, data.facilities || null,
+      data.selling_reason || null, data.owner_name || null,
+      data.owner_whatsapp_1 || null, data.owner_whatsapp_2 || null,
+      data.google_maps_url || null, isPremium, isFeatured, isHot, isChoice,
+      "active", now, now
+    ).run();
+  }
 
   // Insert images jika ada (image_url1 sampai image_url10)
   const imageUrls = [];
@@ -93,9 +129,22 @@ async function insertProperty(env, data, admin) {
   if (imageUrls.length > 0) {
     for (let i = 0; i < imageUrls.length; i++) {
       const imageId = crypto.randomUUID();
-      await env.DB.prepare(
-        "INSERT INTO property_images (id, property_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?, ?)"
-      ).bind(imageId, id, imageUrls[i], i === 0 ? 1 : 0, i).run();
+      try {
+        await env.DB.prepare(
+          "INSERT INTO property_images (id, property_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?, ?)"
+        ).bind(imageId, id, imageUrls[i], i === 0 ? 1 : 0, i).run();
+      } catch (imageInsertError) {
+        await env.DB.prepare(
+          "INSERT INTO property_images (id, property_id, url, filename, is_primary, sort_order) VALUES (?, ?, ?, ?, ?, ?)"
+        ).bind(
+          imageId,
+          id,
+          imageUrls[i],
+          imageUrls[i].split("/").pop() || `image-${imageId}`,
+          i === 0 ? 1 : 0,
+          i
+        ).run();
+      }
     }
   }
 

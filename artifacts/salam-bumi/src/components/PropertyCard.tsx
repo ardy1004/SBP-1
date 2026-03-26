@@ -115,19 +115,26 @@ export function PropertyCard({ property }: PropertyCardProps) {
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
         
-        {/* SOLD Ribbon Overlay */}
+        {/* TERJUAL Ribbon */}
         {property.badges.is_sold && (
-          <div className="absolute inset-0 z-10 pointer-events-none overflow-hidden">
+          <>
             {/* Red overlay on entire image (20% opacity) */}
-            <div className="absolute inset-0 bg-red-500/20" />
-            
-            {/* Diagonal Ribbon from bottom-left to top-right */}
-            <div className="absolute bottom-0 left-0 w-full h-full flex items-center justify-center">
-              <div className="absolute bg-gradient-to-r from-red-600 to-red-500 text-white font-extrabold text-xl sm:text-2xl md:text-3xl px-12 sm:px-16 md:px-20 py-2 sm:py-3 border-[3px] border-white shadow-2xl transform -rotate-45 tracking-widest whitespace-nowrap">
-                S O L D
+            <div className="absolute inset-0 bg-red-500/20 z-10 pointer-events-none"></div>
+            {/* Ribbon container */}
+            <div className="absolute top-0 right-0 z-20 w-[180px] h-[180px] overflow-hidden">
+              {/* Ribbon shadow */}
+              <div className="absolute top-[38px] right-[-48px] bg-red-900/30 text-transparent font-bold text-base px-16 py-2.5 transform rotate-45 shadow-xl">
+                TERJUAL
               </div>
+              {/* Main ribbon */}
+              <div className="absolute top-[35px] right-[-47px] bg-gradient-to-r from-red-600 to-red-500 text-white font-extrabold text-base px-16 py-2.5 transform rotate-45 shadow-lg tracking-wider border-y-[3px] border-white/30">
+                TERJUAL
+              </div>
+              {/* Ribbon tails */}
+              <div className="absolute bottom-[125px] left-[-12px] w-0 h-0 border-r-[12px] border-r-red-800 border-b-[12px] border-b-transparent"></div>
+              <div className="absolute top-0 left-[-3px] w-0 h-0 border-r-[10px] border-r-red-700 border-b-[10px] border-b-transparent"></div>
             </div>
-          </div>
+          </>
         )}
         
         {/* Navigation Arrows (Show on hover if multiple imgs) */}

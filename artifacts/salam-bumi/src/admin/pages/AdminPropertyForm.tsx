@@ -149,7 +149,7 @@ export default function AdminPropertyForm() {
     if (!isEdit || !id) return;
     const fetchProperty = async () => {
       try {
-        const result = await propertiesApi.getBySlug(id);
+        const result = await propertiesApi.getById(id);
         if (result.success && result.data) {
           setExisting(result.data);
         }
@@ -397,18 +397,21 @@ export default function AdminPropertyForm() {
         const result = isEdit && id
           ? await propertiesApi.update(id, propertyData)
           : await propertiesApi.create(propertyData);
-        
-        const propertyId = isEdit ? id : result.id;
+
+        const propertyId = isEdit
+          ? id
+          : ("id" in result ? result.id : undefined);
 
         // Simpan gambar ke property_images table jika ada
         if (imageUrls.length > 0 && propertyId) {
           for (let i = 0; i < imageUrls.length; i++) {
             try {
-              await fetch("/api/properties/save-image", {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                },
+               await fetch("/api/properties/save-image", {
+                 method: "POST",
+                 headers: {
+                   "Content-Type": "application/json",
+                   "Authorization": `Bearer ${localStorage.getItem("sbp_admin_token") || ""}`,
+                 },
                 body: JSON.stringify({
                   property_id: propertyId,
                   image_url: imageUrls[i],

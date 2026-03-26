@@ -9,8 +9,22 @@ import { Button } from "./ui/button";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/admin/context/AuthContext";
 
+interface NavDropdownItem {
+  href: string;
+  label: string;
+}
+
+interface NavLinkItem {
+  href: string;
+  label: string;
+  icon: React.ElementType;
+  badge?: string;
+  hasDropdown?: boolean;
+  dropdownItems?: NavDropdownItem[];
+}
+
 // Navigation items dengan icons dan dropdown support
-const NAV_LINKS = [
+const NAV_LINKS: NavLinkItem[] = [
   { href: "/", label: "Home", icon: Home },
   { 
     href: "/properti", 

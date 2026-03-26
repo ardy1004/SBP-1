@@ -87,15 +87,29 @@ export async function onRequestGet(context) {
     const totalPages = Math.ceil(total / limit);
 
     // Fetch properties dengan primary image
-    const properties = await env.DB.prepare(
-      `SELECT p.*, 
-        (SELECT image_url FROM property_images WHERE property_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
-        (SELECT COUNT(*) FROM property_images WHERE property_id = p.id) as image_count
-       FROM properties p 
-       ${whereClause} 
-       ORDER BY p.created_at DESC 
-       LIMIT ? OFFSET ?`
-    ).bind(...params, limit, offset).all();
+    let properties;
+    try {
+      properties = await env.DB.prepare(
+        `SELECT p.*, 
+          (SELECT image_url FROM property_images WHERE property_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+          (SELECT COUNT(*) FROM property_images WHERE property_id = p.id) as image_count
+         FROM properties p 
+         ${whereClause} 
+         ORDER BY p.created_at DESC 
+         LIMIT ? OFFSET ?`
+      ).bind(...params, limit, offset).all();
+    } catch (imageUrlError) {
+      console.warn("[PROPERTIES] Falling back to legacy property_images schema:", imageUrlError?.message || imageUrlError);
+      properties = await env.DB.prepare(
+        `SELECT p.*, 
+          (SELECT url FROM property_images WHERE property_id = p.id AND is_primary = 1 LIMIT 1) as primary_image,
+          (SELECT COUNT(*) FROM property_images WHERE property_id = p.id) as image_count
+         FROM properties p 
+         ${whereClause} 
+         ORDER BY p.created_at DESC 
+         LIMIT ? OFFSET ?`
+      ).bind(...params, limit, offset).all();
+    }
 
     // Format response - exclude sensitive owner data for public
     const formattedProperties = (properties.results || []).map(p => ({
@@ -113,6 +127,7 @@ export async function onRequestGet(context) {
       city: p.city,
       district: p.district,
       province: p.province,
+      village: p.village,
       address: p.address,
       land_area: p.land_area,
       building_area: p.building_area,

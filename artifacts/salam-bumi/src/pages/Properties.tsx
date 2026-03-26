@@ -91,7 +91,11 @@ export default function Properties() {
   const [search, setSearch] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPurpose, setSelectedPurpose] = useState("");
+  const [selectedProvince, setSelectedProvince] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedVillage, setSelectedVillage] = useState("");
+  const [selectedPrice, setSelectedPrice] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
 
   // Get filters from URL path AND query parameters
@@ -133,10 +137,31 @@ export default function Properties() {
       setSelectedType(pathParams[1].toLowerCase());
     }
     
-    // Handle city from query params
+    // Handle location filters from query params
+    const queryProvince = searchParams.get("province");
+    if (queryProvince) {
+      setSelectedProvince(queryProvince);
+    }
+    
     const queryCity = searchParams.get("city");
     if (queryCity) {
       setSelectedCity(queryCity);
+    }
+    
+    const queryDistrict = searchParams.get("district");
+    if (queryDistrict) {
+      setSelectedDistrict(queryDistrict);
+    }
+    
+    const queryVillage = searchParams.get("village");
+    if (queryVillage) {
+      setSelectedVillage(queryVillage);
+    }
+    
+    // Handle price filter from query params
+    const queryPrice = searchParams.get("price");
+    if (queryPrice) {
+      setSelectedPrice(queryPrice);
     }
   }, [location]);
 
@@ -175,11 +200,36 @@ export default function Properties() {
     const matchPurpose =
       !selectedPurpose || p.purpose === selectedPurpose;
 
+    const matchProvince =
+      !selectedProvince ||
+      (p.province && p.province.toLowerCase().includes(selectedProvince.toLowerCase().replace(/\./g, "")));
+
     const matchCity =
       !selectedCity ||
       p.city.toLowerCase().includes(selectedCity.toLowerCase());
 
-    return matchSearch && matchType && matchPurpose && matchCity && !p.badges.is_sold;
+    const matchDistrict =
+      !selectedDistrict ||
+      (p.district && p.district.toLowerCase().includes(selectedDistrict.toLowerCase()));
+
+    const matchVillage =
+      !selectedVillage ||
+      (p.village && p.village.toLowerCase().includes(selectedVillage.toLowerCase()));
+
+    // Price filter logic
+    let matchPrice = true;
+    if (selectedPrice) {
+      const [minPriceStr, maxPriceStr] = selectedPrice.split('-');
+      const minPrice = parseInt(minPriceStr) || 0;
+      const maxPrice = parseInt(maxPriceStr) || Infinity;
+      
+      if (minPrice > 0 || maxPrice < Infinity) {
+        const propertyPrice = p.price || 0;
+        matchPrice = propertyPrice >= minPrice && propertyPrice <= maxPrice;
+      }
+    }
+
+    return matchSearch && matchType && matchPurpose && matchProvince && matchCity && matchDistrict && matchVillage && matchPrice && !p.badges.is_sold;
   });
 
   const displayedProperties = filtered.slice(0, visibleCount);

@@ -3,6 +3,7 @@ import { AdminLayout } from "../components/AdminLayout";
 import { Eye, Edit, Download, RefreshCw, X, PenLine, Trash2, Plus, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { contractsApi } from "@/lib/api-client";
 
 interface Contract {
   id: string;
@@ -45,18 +46,9 @@ export default function AdminContracts() {
   const fetchContracts = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
-      const response = await fetch("/api/contracts", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setContracts(data.data);
-        }
+      const data = await contractsApi.getAll();
+      if (data.success && data.data) {
+        setContracts(data.data as Contract[]);
       } else {
         setContracts([]);
       }

@@ -6,6 +6,7 @@ import {
   Download, Eye, Loader2, ChevronLeft, ChevronRight
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getToken } from "@/lib/api-client";
 import { formatDate, getStatusColor, getStatusLabel, isRollbackAvailable } from "../utils/csv";
 
 interface ImportLog {
@@ -32,7 +33,7 @@ export default function ImportHistory() {
   const fetchHistory = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch(`/api/import/history?page=${page}&limit=10`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
@@ -53,7 +54,7 @@ export default function ImportHistory() {
 
   const handleDownloadErrorReport = async (importId: string) => {
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch(`/api/import/error-report/${importId}`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
@@ -80,7 +81,7 @@ export default function ImportHistory() {
     }
 
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch(`/api/import/rollback/${importId}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` },

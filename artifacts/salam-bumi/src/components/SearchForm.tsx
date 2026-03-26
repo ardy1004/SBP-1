@@ -210,6 +210,14 @@ export function SearchForm() {
       {/* Main Filters Row 1 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <SearchableSelect
+          label="Jenis Properti"
+          value={propertyType}
+          onChange={setPropertyType}
+          options={["Rumah", "Kost", "Tanah", "Villa", "Ruko", "Apartment", "Hotel", "Homestay", "Gudang", "Komersial Lainnya"]}
+          placeholder="Semua Tipe"
+          defaultOption="Semua Tipe"
+        />
+        <SearchableSelect
           label="Provinsi"
           value={province}
           onChange={setProvince}
@@ -239,14 +247,6 @@ export function SearchForm() {
           placeholder={city ? "Semua Kecamatan" : "Pilih Kota Dulu"}
           disabled={!city}
           defaultOption="Semua Kecamatan"
-        />
-        <SearchableSelect
-          label="Jenis Properti"
-          value={propertyType}
-          onChange={setPropertyType}
-          options={["Rumah", "Kost", "Tanah", "Villa", "Ruko", "Apartment", "Hotel", "Homestay", "Gudang", "Komersial Lainnya"]}
-          placeholder="Semua Tipe"
-          defaultOption="Semua Tipe"
         />
       </div>
 

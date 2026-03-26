@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { getToken } from "@/lib/api-client";
 
 type Step = 1 | 2 | 3 | 4 | 5;
 
@@ -68,7 +69,7 @@ export default function ImportCsv() {
   const handleDownloadTemplate = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch("/api/import/download-template", {
         headers: {
           "Authorization": `Bearer ${token}`,
@@ -107,7 +108,7 @@ export default function ImportCsv() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const formData = new FormData();
       formData.append("file", file);
 
@@ -148,7 +149,7 @@ export default function ImportCsv() {
     setProgressStatus("Memulai import...");
 
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch("/api/import/confirm", {
         method: "POST",
         headers: {
@@ -190,7 +191,7 @@ export default function ImportCsv() {
 
   // Poll progress
   const pollProgress = async (id: string) => {
-    const token = localStorage.getItem("sbp_admin_token");
+    const token = getToken();
     
     const checkProgress = async () => {
       try {
@@ -230,7 +231,7 @@ export default function ImportCsv() {
     if (!importId) return;
 
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch(`/api/import/error-report/${importId}`, {
         headers: { "Authorization": `Bearer ${token}` },
       });
@@ -264,7 +265,7 @@ export default function ImportCsv() {
 
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
+      const token = getToken();
       const response = await fetch(`/api/import/rollback/${importId}`, {
         method: "POST",
         headers: { "Authorization": `Bearer ${token}` },

@@ -25,6 +25,19 @@ export function clearToken(): void {
   localStorage.removeItem(TOKEN_KEY);
 }
 
+function isLocalDevToken(token: string | null): boolean {
+  if (!token) return false;
+  const parts = token.split(".");
+  if (parts.length !== 2) return false;
+
+  try {
+    const payload = JSON.parse(atob(parts[0]));
+    return payload?.local === true;
+  } catch {
+    return false;
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Base Fetch Wrapper
 // ---------------------------------------------------------------------------
@@ -60,7 +73,7 @@ async function apiFetch<T = unknown>(
   // Handle 401 - auto logout (skip for local dev tokens)
   if (response.status === 401 && auth) {
     const token = getToken();
-    const isLocalToken = token && token.includes('"local":true');
+    const isLocalToken = isLocalDevToken(token);
     if (!isLocalToken) {
       clearToken();
       if (window.location.pathname.startsWith("/admin") && window.location.pathname !== "/admin/login") {
@@ -69,7 +82,12 @@ async function apiFetch<T = unknown>(
     }
   }
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
+  const rawText = await response.text();
+  const data = rawText
+    ? (isJson ? JSON.parse(rawText) : { success: false, error: rawText })
+    : { success: false, error: `HTTP ${response.status}` };
 
   if (!response.ok) {
     const error = new Error(data.error || `HTTP ${response.status}`) as Error & { status: number };
@@ -111,6 +129,9 @@ export const propertiesApi = {
 
   getBySlug: (slug: string) =>
     apiFetch<{ success: boolean; data: PropertyDetail }>(`/api/properties/${slug}`),
+
+  getById: (id: string) =>
+    apiFetch<{ success: boolean; data: PropertyDetail }>(`/api/properties/${id}`),
 
   getRelated: (excludeId: string, type?: string, city?: string, limit: number = 4) => {
     const params = new URLSearchParams({ exclude: excludeId, limit: String(limit) });

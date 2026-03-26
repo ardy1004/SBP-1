@@ -91,21 +91,10 @@ export default function AdminProperties() {
 
     setDeleting(true);
     try {
-      const response = await fetch(`/api/properties/${id}`, {
-        method: "DELETE",
-        headers: {
-          "Authorization": `Bearer ${localStorage.getItem("sbp_admin_token")}`,
-        },
-      });
-
-      if (response.ok) {
-        toast({ title: "Properti dihapus", description: `"${title}" berhasil dihapus.` });
-        // Refresh list
-        setProperties(properties.filter(p => p.id !== id));
-        setPagination(prev => ({ ...prev, total: prev.total - 1 }));
-      } else {
-        throw new Error("Delete failed");
-      }
+      await propertiesApi.delete(id);
+      toast({ title: "Properti dihapus", description: `"${title}" berhasil dihapus.` });
+      setProperties(properties.filter(p => p.id !== id));
+      setPagination(prev => ({ ...prev, total: Math.max(0, prev.total - 1) }));
     } catch (error) {
       console.error("Delete error:", error);
       toast({ title: "Error", description: "Gagal menghapus properti", variant: "destructive" });

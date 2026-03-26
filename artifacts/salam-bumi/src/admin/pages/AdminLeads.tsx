@@ -4,6 +4,7 @@ import { Search, Eye, MessageCircle, Calendar, FileText, ChevronDown, Flame, Sun
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { leadsApi } from "@/lib/api-client";
 
 interface Lead {
   id: string;
@@ -62,27 +63,15 @@ function LeadDetailModal({ lead, onClose, onUpdate }: { lead: Lead; onClose: () 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
-      const response = await fetch(`/api/leads/${lead.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          status,
-          notes: note,
-          next_followup: followupDate || null,
-        }),
+      await leadsApi.update(lead.id, {
+        status,
+        notes: note,
+        next_followup: followupDate || null,
       });
 
-      if (response.ok) {
-        toast({ title: "Lead diupdate", description: "Perubahan berhasil disimpan." });
-        onUpdate();
-        onClose();
-      } else {
-        throw new Error("Update failed");
-      }
+      toast({ title: "Lead diupdate", description: "Perubahan berhasil disimpan." });
+      onUpdate();
+      onClose();
     } catch (error) {
       console.error("Update error:", error);
       toast({ title: "Error", description: "Gagal menyimpan perubahan", variant: "destructive" });
@@ -214,20 +203,10 @@ export default function AdminLeads() {
   const fetchLeads = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem("sbp_admin_token");
-      const response = await fetch("/api/leads/list", {
-        headers: {
-          "Authorization": `Bearer ${token}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data) {
-          setLeads(data.data);
-        }
+      const data = await leadsApi.getAll({ limit: 1000 });
+      if (data.success && data.data) {
+        setLeads(data.data as Lead[]);
       } else {
-        // API might not exist yet, show empty state
         setLeads([]);
       }
     } catch (error) {

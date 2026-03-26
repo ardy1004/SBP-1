@@ -110,8 +110,8 @@ export function generateSlug(params: SlugParams): string {
     const titleWithoutStopWords = removeStopWords(normalizedTitle);
     const titleWords = titleWithoutStopWords.split("-").slice(0, 5);
     
-    const propTypeNormalized = normalizeText(propertyType);
-    const filteredWords = titleWords.filter(word => word !== propTypeNormalized);
+    const propTypeNormalized = propertyType ? normalizeText(propertyType) : null;
+    const filteredWords = titleWords.filter(word => word && word !== propTypeNormalized);
     
     slugParts = slugParts.concat(filteredWords);
   }

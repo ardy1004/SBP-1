@@ -53,9 +53,17 @@ export async function onRequestGet(context) {
     ).bind(property.id).run();
 
     // Ambil semua gambar
-    const images = await env.DB.prepare(
-      "SELECT id, image_url, image_webp_url, is_primary, sort_order FROM property_images WHERE property_id = ? ORDER BY sort_order ASC"
-    ).bind(property.id).all();
+    let images;
+    try {
+      images = await env.DB.prepare(
+        "SELECT id, image_url, image_webp_url, is_primary, sort_order FROM property_images WHERE property_id = ? ORDER BY sort_order ASC"
+      ).bind(property.id).all();
+    } catch (imageSchemaError) {
+      console.warn("[PROPERTY DETAIL] Falling back to legacy property_images schema:", imageSchemaError?.message || imageSchemaError);
+      images = await env.DB.prepare(
+        "SELECT id, url as image_url, NULL as image_webp_url, is_primary, sort_order FROM property_images WHERE property_id = ? ORDER BY sort_order ASC"
+      ).bind(property.id).all();
+    }
 
     // Format response dengan data lengkap
     const formatted = {

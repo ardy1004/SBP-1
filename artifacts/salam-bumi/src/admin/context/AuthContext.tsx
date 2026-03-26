@@ -27,7 +27,6 @@ const ADMIN_EMAIL = (import.meta.env.VITE_ADMIN_EMAIL as string) || "admin@salam
 const ADMIN_PASSWORD_HASH = (import.meta.env.VITE_ADMIN_PASSWORD_HASH as string) ||
   "$2b$12$4z2VBsElVjYj1MXfnWU0zeIWCSXh6epu2ScXH4ABfLm.MACnznWAW";
 
-const TOKEN_KEY = "sbp_admin_token";
 const INACTIVITY_TIMEOUT = 30 * 60 * 1000;
 const REMEMBER_ME_DURATION = 7 * 24 * 60 * 60 * 1000;
 const SESSION_DURATION = 24 * 60 * 60 * 1000;
@@ -148,9 +147,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
+    const normalizedEmail = email.trim().toLowerCase();
+
     // Coba login via API dulu
     try {
-      const result = await authApi.login(email, password);
+      const result = await authApi.login(normalizedEmail, password);
       if (result.success && result.token) {
         setToken(result.token);
         setUser({
@@ -160,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           photo: result.admin.photo || ADMIN_USER.photo,
         });
         resetInactivityTimer();
-        logActivity("Login", `Admin login berhasil: ${email}`);
+        logActivity("Login", `Admin login berhasil: ${normalizedEmail}`);
         return true;
       }
     } catch (apiError: unknown) {
@@ -170,8 +171,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Hanya return false jika API benar-benar menolak kredensial (401 dengan pesan jelas)
       // Semua error lain → fallback ke local auth
-      if (errorStatus === 401 && (errorMsg.includes("password") || errorMsg.includes("credentials") || errorMsg.includes("Email"))) {
-        logActivity("Login Failed", `Percobaan login gagal: ${email}`);
+      if (errorStatus === 401 || errorStatus === 403) {
+        logActivity("Login Failed", `Percobaan login gagal: ${normalizedEmail}`);
         return false;
       }
 
@@ -182,7 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Fallback: local auth dengan bcrypt
     await new Promise(r => setTimeout(r, 700));
 
-    const emailOk = email.trim().toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    const emailOk = normalizedEmail === ADMIN_EMAIL.toLowerCase();
     let passOk = false;
     try {
       passOk = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
@@ -196,11 +197,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setToken(token);
       setUser(ADMIN_USER);
       resetInactivityTimer();
-      logActivity("Login", `Admin login berhasil (local): ${email}`);
+      logActivity("Login", `Admin login berhasil (local): ${normalizedEmail}`);
       return true;
     }
 
-    logActivity("Login Failed", `Percobaan login gagal: ${email}`);
+    logActivity("Login Failed", `Percobaan login gagal: ${normalizedEmail}`);
     return false;
   };
 

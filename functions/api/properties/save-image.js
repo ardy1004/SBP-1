@@ -22,15 +22,29 @@ export async function onRequestPost(context) {
     const id = crypto.randomUUID();
 
     // Simpan ke property_images table
-    await env.DB.prepare(
-      "INSERT INTO property_images (id, property_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?, ?)"
-    ).bind(
-      id,
-      property_id,
-      image_url,
-      is_primary ? 1 : 0,
-      sort_order || 0
-    ).run();
+    try {
+      await env.DB.prepare(
+        "INSERT INTO property_images (id, property_id, image_url, is_primary, sort_order) VALUES (?, ?, ?, ?, ?)"
+      ).bind(
+        id,
+        property_id,
+        image_url,
+        is_primary ? 1 : 0,
+        sort_order || 0
+      ).run();
+    } catch (imageInsertError) {
+      console.warn("[SAVE IMAGE] Falling back to legacy property_images schema:", imageInsertError?.message || imageInsertError);
+      await env.DB.prepare(
+        "INSERT INTO property_images (id, property_id, url, filename, is_primary, sort_order) VALUES (?, ?, ?, ?, ?, ?)"
+      ).bind(
+        id,
+        property_id,
+        image_url,
+        image_url.split("/").pop() || `image-${id}`,
+        is_primary ? 1 : 0,
+        sort_order || 0
+      ).run();
+    }
 
     return jsonResponse({
       success: true,
